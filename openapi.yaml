@@ -1,0 +1,935 @@
+openapi: 3.0.3
+info:
+  title: Trading Platform Simulator API
+  description: API REST per la piattaforma didattica di simulazione trading
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8000/api/v1
+
+tags:
+  - name: market
+    description: Simulatore di mercato e prezzi
+  - name: retail
+    description: Trader retail
+  - name: professional
+    description: Trader professionisti
+  - name: algorithm
+    description: Motore algoritmico di supporto decisionale
+  - name: manager
+    description: Dashboard e KPI gestore piattaforma
+
+paths:
+
+  # ─── MARKET ──────────────────────────────────────────────
+
+  /market/assets:
+    get:
+      tags: [market]
+      summary: Lista tutti gli asset con prezzi correnti
+      responses:
+        '200':
+          description: Lista asset
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Asset'
+
+  /market/assets/{asset_id}:
+    get:
+      tags: [market]
+      summary: Dettaglio singolo asset
+      parameters:
+        - name: asset_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Asset trovato
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Asset'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /market/assets/{asset_id}/history:
+    get:
+      tags: [market]
+      summary: Serie storica dei prezzi
+      parameters:
+        - name: asset_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: last_n
+          in: query
+          required: false
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Serie storica
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  history:
+                    type: array
+                    items:
+                      type: number
+                  ticks:
+                    type: integer
+
+  /market/tick:
+    post:
+      tags: [market]
+      summary: Avanza la simulazione di N tick
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TickRequest'
+      responses:
+        '200':
+          description: Tick eseguiti
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tick:
+                    type: integer
+                  summaries:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TickSummary'
+
+  /market/status:
+    get:
+      tags: [market]
+      summary: Stato corrente della simulazione
+      responses:
+        '200':
+          description: Stato simulazione
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MarketStatus'
+
+  # ─── RETAIL ──────────────────────────────────────────────
+
+  /retail/traders:
+    get:
+      tags: [retail]
+      summary: Lista tutti i trader retail
+      responses:
+        '200':
+          description: Lista retail
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RetailSummary'
+    post:
+      tags: [retail]
+      summary: Crea nuovo trader retail
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRetailRequest'
+      responses:
+        '201':
+          description: Retail creato
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RetailSummary'
+
+  /retail/traders/{trader_id}:
+    get:
+      tags: [retail]
+      summary: Dettaglio trader retail
+      parameters:
+        - name: trader_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Dettaglio retail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RetailDetail'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /retail/traders/{trader_id}/trade:
+    post:
+      tags: [retail]
+      summary: Esegui operazione manuale
+      parameters:
+        - name: trader_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TradeRequest'
+      responses:
+        '200':
+          description: Trade eseguito
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Trade'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /retail/traders/{trader_id}/copy:
+    post:
+      tags: [retail]
+      summary: Avvia copy su trader professionista
+      parameters:
+        - name: trader_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CopyRequest'
+      responses:
+        '201':
+          description: Copy avviato
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CopyRelation'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /retail/traders/{trader_id}/copy/{professional_id}:
+    delete:
+      tags: [retail]
+      summary: Ferma copy
+      parameters:
+        - name: trader_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: professional_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Copy fermato
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+
+  /retail/traders/{trader_id}/history:
+    get:
+      tags: [retail]
+      summary: Storico operazioni retail
+      parameters:
+        - name: trader_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Lista trade
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Trade'
+
+  /retail/traders/{trader_id}/pnl:
+    get:
+      tags: [retail]
+      summary: PnL corrente
+      parameters:
+        - name: trader_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: PnL
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  pnl:
+                    type: number
+                  portfolio_value:
+                    type: number
+
+  # ─── PROFESSIONAL ────────────────────────────────────────
+
+  /professional/traders:
+    get:
+      tags: [professional]
+      summary: Lista trader professionisti
+      responses:
+        '200':
+          description: Lista professionisti
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProfessionalSummary'
+
+  /professional/traders/{trader_id}:
+    get:
+      tags: [professional]
+      summary: Dettaglio professionista
+      parameters:
+        - name: trader_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Dettaglio
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfessionalDetail'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /professional/traders/{trader_id}/phase:
+    patch:
+      tags: [professional]
+      summary: Cambia fase trader
+      parameters:
+        - name: trader_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PhaseChangeRequest'
+      responses:
+        '200':
+          description: Fase aggiornata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfessionalSummary'
+
+  /professional/traders/{trader_id}/strategy:
+    patch:
+      tags: [professional]
+      summary: Aggiorna profilo strategia
+      parameters:
+        - name: trader_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StrategyProfile'
+      responses:
+        '200':
+          description: Strategia aggiornata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StrategyProfile'
+
+  /professional/traders/{trader_id}/history:
+    get:
+      tags: [professional]
+      summary: Storico operazioni professionista
+      parameters:
+        - name: trader_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Lista trade
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Trade'
+
+  /professional/traders/{trader_id}/phase-history:
+    get:
+      tags: [professional]
+      summary: Log dei cambi di fase
+      parameters:
+        - name: trader_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Storico fasi
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PhaseHistoryEntry'
+
+  # ─── ALGORITHM ───────────────────────────────────────────
+
+  /algorithm/recommendations:
+    get:
+      tags: [algorithm]
+      summary: Lista raccomandazioni del motore algoritmico
+      responses:
+        '200':
+          description: Raccomandazioni
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Recommendation'
+
+  /algorithm/rankings:
+    get:
+      tags: [algorithm]
+      summary: Ranking trader per score di monetizzazione
+      responses:
+        '200':
+          description: Ranking
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TraderRanking'
+
+  /algorithm/simulate-scenario:
+    post:
+      tags: [algorithm]
+      summary: Simula scenario decisionale
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScenarioRequest'
+      responses:
+        '200':
+          description: Risultato simulazione
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScenarioResult'
+
+  # ─── MANAGER ─────────────────────────────────────────────
+
+  /manager/overview:
+    get:
+      tags: [manager]
+      summary: KPI globali piattaforma
+      responses:
+        '200':
+          description: Overview
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlatformOverview'
+
+  /manager/pnl:
+    get:
+      tags: [manager]
+      summary: Dettaglio PnL piattaforma
+      responses:
+        '200':
+          description: PnL dettaglio
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlatformPnL'
+
+  /manager/copy-stats:
+    get:
+      tags: [manager]
+      summary: Statistiche copy trading aggregate
+      responses:
+        '200':
+          description: Statistiche copy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CopyStats'
+
+  /manager/reset:
+    post:
+      tags: [manager]
+      summary: Reimposta la simulazione
+      responses:
+        '200':
+          description: Reset completato
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+
+# ─── COMPONENTS ──────────────────────────────────────────────
+
+components:
+
+  responses:
+    NotFound:
+      description: Risorsa non trovata
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    BadRequest:
+      description: Richiesta non valida
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+  schemas:
+
+    ErrorResponse:
+      type: object
+      properties:
+        detail:
+          type: string
+
+    Asset:
+      type: object
+      properties:
+        id:
+          type: string
+        symbol:
+          type: string
+        current_price:
+          type: number
+        initial_price:
+          type: number
+        volatility:
+          type: number
+        drift:
+          type: number
+        current_return:
+          type: number
+
+    MarketStatus:
+      type: object
+      properties:
+        tick:
+          type: integer
+        n_assets:
+          type: integer
+        running:
+          type: boolean
+
+    TickRequest:
+      type: object
+      properties:
+        n_ticks:
+          type: integer
+          default: 1
+
+    TickSummary:
+      type: object
+      properties:
+        tick:
+          type: integer
+        prices:
+          type: object
+          additionalProperties:
+            type: number
+        trades_executed:
+          type: integer
+        platform_pnl_delta:
+          type: number
+
+    RetailSummary:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        balance:
+          type: number
+        portfolio_value:
+          type: number
+        total_pnl:
+          type: number
+        n_trades:
+          type: integer
+        copied_traders:
+          type: array
+          items:
+            type: string
+
+    RetailDetail:
+      allOf:
+        - $ref: '#/components/schemas/RetailSummary'
+        - type: object
+          properties:
+            portfolio:
+              type: object
+              additionalProperties:
+                type: number
+            avg_buy_prices:
+              type: object
+              additionalProperties:
+                type: number
+            is_real_user:
+              type: boolean
+
+    CreateRetailRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        initial_balance:
+          type: number
+          default: 10000
+        is_real_user:
+          type: boolean
+          default: false
+
+    TradeRequest:
+      type: object
+      required: [asset_id, action, quantity]
+      properties:
+        asset_id:
+          type: string
+        action:
+          type: string
+          enum: [BUY, SELL]
+        quantity:
+          type: number
+
+    Trade:
+      type: object
+      properties:
+        id:
+          type: string
+        trader_id:
+          type: string
+        asset_id:
+          type: string
+        action:
+          type: string
+          enum: [BUY, SELL]
+        quantity:
+          type: number
+        price:
+          type: number
+        timestamp:
+          type: integer
+        is_copy:
+          type: boolean
+        copied_from:
+          type: string
+          nullable: true
+        pnl_realized:
+          type: number
+
+    CopyRequest:
+      type: object
+      required: [professional_id]
+      properties:
+        professional_id:
+          type: string
+        allocation_pct:
+          type: number
+          default: 0.5
+
+    CopyRelation:
+      type: object
+      properties:
+        retail_id:
+          type: string
+        professional_id:
+          type: string
+        allocation_pct:
+          type: number
+        start_tick:
+          type: integer
+        active:
+          type: boolean
+
+    ProfessionalSummary:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        phase:
+          type: string
+          enum: [REPUTATION_BUILD, FOLLOWER_GROWTH, MONETIZATION]
+        followers_count:
+          type: integer
+        follower_capital_exposed:
+          type: number
+        pnl_personal:
+          type: number
+        bonus_earned:
+          type: number
+        total_compensation:
+          type: number
+        n_trades:
+          type: integer
+
+    ProfessionalDetail:
+      allOf:
+        - $ref: '#/components/schemas/ProfessionalSummary'
+        - type: object
+          properties:
+            strategy:
+              $ref: '#/components/schemas/StrategyProfile'
+            followers:
+              type: array
+              items:
+                type: string
+            last_phase_change_tick:
+              type: integer
+              nullable: true
+
+    StrategyProfile:
+      type: object
+      properties:
+        expected_value:
+          type: number
+        risk_level:
+          type: number
+        trade_frequency:
+          type: number
+        min_followers_for_B:
+          type: integer
+        min_followers_for_C:
+          type: integer
+        target_capital_exposed:
+          type: number
+        bonus_per_tick_in_C:
+          type: number
+
+    PhaseChangeRequest:
+      type: object
+      required: [new_phase]
+      properties:
+        new_phase:
+          type: string
+          enum: [REPUTATION_BUILD, FOLLOWER_GROWTH, MONETIZATION]
+
+    PhaseHistoryEntry:
+      type: object
+      properties:
+        tick:
+          type: integer
+        from_phase:
+          type: string
+        to_phase:
+          type: string
+        followers_at_transition:
+          type: integer
+        capital_exposed_at_transition:
+          type: number
+        note:
+          type: string
+
+    Recommendation:
+      type: object
+      properties:
+        trader_id:
+          type: string
+        trader_name:
+          type: string
+        current_phase:
+          type: string
+        suggested_action:
+          type: string
+        reason:
+          type: string
+        expected_platform_gain:
+          type: number
+        risk_level:
+          type: string
+          enum: [LOW, MEDIUM, HIGH]
+        confidence:
+          type: number
+        score:
+          type: number
+
+    TraderRanking:
+      type: object
+      properties:
+        trader_id:
+          type: string
+        name:
+          type: string
+        phase:
+          type: string
+        score:
+          type: number
+        followers:
+          type: integer
+        capital_exposed:
+          type: number
+        pnl_personal:
+          type: number
+
+    ScenarioRequest:
+      type: object
+      required: [trader_id, scenario]
+      properties:
+        trader_id:
+          type: string
+        scenario:
+          type: string
+          enum: [TRANSITION_TO_MONETIZATION, MAINTAIN_CURRENT_PHASE]
+        n_ticks:
+          type: integer
+          default: 10
+
+    ScenarioResult:
+      type: object
+      properties:
+        scenario:
+          type: string
+        trader_id:
+          type: string
+        n_ticks:
+          type: integer
+        expected_retail_loss:
+          type: number
+        expected_bonus_paid:
+          type: number
+        expected_platform_net_gain:
+          type: number
+        confidence_interval:
+          type: array
+          items:
+            type: number
+          minItems: 2
+          maxItems: 2
+
+    PlatformOverview:
+      type: object
+      properties:
+        current_tick:
+          type: integer
+        platform_pnl:
+          type: number
+        platform_commissions:
+          type: number
+        platform_bonus_paid:
+          type: number
+        platform_net:
+          type: number
+        total_retail_capital:
+          type: number
+        total_capital_in_copy:
+          type: number
+        copy_penetration_pct:
+          type: number
+        n_professionals_in_monetization:
+          type: integer
+        n_retail_losing:
+          type: integer
+        avg_retail_pnl:
+          type: number
+
+    PlatformPnL:
+      type: object
+      properties:
+        pnl:
+          type: number
+        commissions:
+          type: number
+        bonus_paid:
+          type: number
+        net:
+          type: number
+        history:
+          type: array
+          items:
+            type: object
+            properties:
+              tick:
+                type: integer
+              pnl:
+                type: number
+              net:
+                type: number
+
+    CopyStats:
+      type: object
+      properties:
+        total_active_relations:
+          type: integer
+        total_capital_in_copy:
+          type: number
+        by_professional:
+          type: object
+          additionalProperties:
+            type: object
+            properties:
+              followers:
+                type: integer
+              capital_exposed:
+                type: number
+              phase:
+                type: string
