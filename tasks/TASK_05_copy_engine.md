@@ -40,26 +40,26 @@ def start_copy(
 ) -> CopyRelation:
     """
     Avvia una relazione di copy trading.
-    
+
     Validazioni:
     - Il retail esiste in state.retail_traders
     - Il professional esiste in state.professional_traders
     - Non esiste già una CopyRelation attiva tra questi due
     - allocation_pct in range (0.0, 1.0]
-    
+
     Azioni:
     - Crea CopyRelation e la aggiunge a state.copy_relations
     - Aggiunge professional_id a retail.copied_traders
     - Aggiunge retail_id a professional.followers
     - Chiama professional_engine.update_follower_capital(professional_id)
-    
+
     Lancia ValueError con messaggio descrittivo in caso di errore.
     """
 
 def stop_copy(retail_id: str, professional_id: str) -> None:
     """
     Disattiva la relazione di copy.
-    
+
     Azioni:
     - Imposta CopyRelation.active = False
     - Rimuove professional_id da retail.copied_traders
@@ -70,21 +70,21 @@ def stop_copy(retail_id: str, professional_id: str) -> None:
 def propagate_trade(professional_trade: Trade) -> List[Trade]:
     """
     Replica il trade del professionista a tutti i retail follower attivi.
-    
+
     Per ogni CopyRelation attiva con professional_id == trade.trader_id:
-    
+
         capital_to_use = retail.balance * copy_relation.allocation_pct
         qty_to_copy = capital_to_use / current_price   (per BUY)
                     = retail.portfolio[asset_id] * allocation_pct  (per SELL)
-        
+
         Se qty > 0:
             esegui il trade sul retail (chiama RetailTraderEngine.execute_trade)
             segna il trade come is_copy=True, copied_from=professional_id
-    
+
     Aggiorna state.platform_pnl con le perdite nette dei retail:
         platform_gain += max(0, -retail_pnl_delta)
         # La piattaforma guadagna dalle perdite dei retail, non dai guadagni
-    
+
     Restituisce lista di Trade eseguiti sui retail.
     """
 

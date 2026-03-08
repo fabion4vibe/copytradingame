@@ -22,34 +22,34 @@ Calcola uno score per ogni trader professionista che rappresenta la **priorità 
 def compute_score(trader_id: str, weights: dict = None) -> float:
     """
     Calcola lo score di monetizzazione per un trader professionista.
-    
+
     Formula:
         score = w1 * norm_followers
               + w2 * norm_capital_exposed
               + w3 * (1 - norm_pnl_personal)   # più il trader ha perso, meno è utile tenerlo in A/B
               + w4 * phase_urgency
-    
+
     Dove:
         norm_* = normalizzazione [0,1] rispetto al massimo tra tutti i professionisti
-        
+
         phase_urgency:
             REPUTATION_BUILD → 0.0
             FOLLOWER_GROWTH  → 0.5
             MONETIZATION     → 1.0  (già in C, score alto ma non azionabile)
-    
+
     Pesi di default:
         w1 = 0.35  (follower count)
         w2 = 0.35  (capitale esposto)
         w3 = 0.15  (performance)
         w4 = 0.15  (urgenza di fase)
-    
+
     Se weights è fornito, usa quelli (stesso formato dict).
     """
 
 def rank_all_traders(weights: dict = None) -> List[dict]:
     """
     Calcola e ordina tutti i trader per score decrescente.
-    
+
     Restituisce lista di:
     {
         "trader_id": str,
@@ -65,7 +65,7 @@ def rank_all_traders(weights: dict = None) -> List[dict]:
 def check_transition_conditions(trader_id: str) -> dict:
     """
     Verifica se le condizioni di transizione automatica sono soddisfatte.
-    
+
     Restituisce:
     {
         "can_transition_to_B": bool,
@@ -90,7 +90,7 @@ Genera raccomandazioni complete per il gestore.
 def get_recommendations(weights: dict = None) -> List[dict]:
     """
     Analizza tutti i trader e produce una lista di raccomandazioni ordinate per priorità.
-    
+
     Una raccomandazione ha questa struttura:
     {
         "trader_id": str,
@@ -103,7 +103,7 @@ def get_recommendations(weights: dict = None) -> List[dict]:
         "confidence": float,           # 0.0–1.0
         "score": float
     }
-    
+
     Azioni possibili:
     - "MAINTAIN_CURRENT_PHASE"
     - "TRANSITION_TO_FOLLOWER_GROWTH"
@@ -116,15 +116,15 @@ def get_recommendations(weights: dict = None) -> List[dict]:
 def simulate_scenario(trader_id: str, scenario: str, n_ticks: int = 10) -> dict:
     """
     Stima l'effetto di un'azione su N tick futuri (simulazione statistica, non determinististica).
-    
+
     Scenari supportati:
     - "TRANSITION_TO_MONETIZATION": stima perdita attesa retail e guadagno piattaforma
     - "MAINTAIN_CURRENT_PHASE": stima evoluzione con strategia corrente
-    
+
     Usa il modello:
         expected_retail_loss = follower_capital * |EV_C| * trade_frequency * n_ticks
         expected_platform_gain = expected_retail_loss - bonus_paid
-    
+
     Restituisce:
     {
         "scenario": str,
@@ -140,7 +140,7 @@ def simulate_scenario(trader_id: str, scenario: str, n_ticks: int = 10) -> dict:
 def get_platform_health_report() -> dict:
     """
     Panoramica sintetica dello stato della piattaforma.
-    
+
     Restituisce:
     {
         "current_tick": int,

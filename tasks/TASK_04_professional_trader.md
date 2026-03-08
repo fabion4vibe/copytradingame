@@ -94,7 +94,7 @@ def create_professional_trader(
 def execute_strategy(trader_id: str) -> Optional[Trade]:
     """
     Esegue la strategia del professionista per il tick corrente.
-    
+
     Logica:
     1. Estrai random() < strategy.trade_frequency → se False, non fare nulla
     2. Scegli un asset casuale tra quelli in state.assets
@@ -108,7 +108,7 @@ def execute_strategy(trader_id: str) -> Optional[Trade]:
     4. Esegui il trade (chiama logica analoga a RetailTraderEngine.execute_trade)
     5. Se fase MONETIZATION, accumula strategy.bonus_per_tick_in_C in bonus_earned
     6. Aggiorna state.platform_pnl del bonus (la piattaforma "paga" il bonus)
-    
+
     Restituisce il Trade eseguito o None se nessun trade questo tick.
     """
 
@@ -116,7 +116,7 @@ def transition_phase(trader_id: str, new_phase: TraderPhase) -> None:
     """
     Cambia la fase del trader e aggiorna la strategy di conseguenza.
     Registra il cambio in phase_history con tick corrente e fase precedente.
-    
+
     Profili strategia per fase:
     - REPUTATION_BUILD → DEFAULT_STRATEGY_A
     - FOLLOWER_GROWTH  → DEFAULT_STRATEGY_B

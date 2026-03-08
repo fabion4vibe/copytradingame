@@ -75,19 +75,19 @@ def execute_trade(
 ) -> Trade:
     """
     Esegue un'operazione manuale per un retail trader.
-    
+
     BUY:
       - Verifica che trader.balance >= quantity * current_price
       - Aggiorna portfolio e avg_buy_prices
       - Scala il balance
       - Aggiunge il Trade a trade_history e state.trade_log
-    
+
     SELL:
       - Verifica che portfolio[asset_id] >= quantity
       - Calcola pnl_realized = (current_price - avg_buy_price) * quantity
       - Aggiorna balance e portfolio
       - Aggiunge il Trade
-    
+
     Lancia ValueError con messaggio descrittivo in caso di errore.
     """
 

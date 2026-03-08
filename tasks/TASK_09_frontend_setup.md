@@ -85,7 +85,7 @@ export default client;
 export const marketApi = {
   getAssets: () => client.get('/market/assets'),
   getAsset: (id: string) => client.get(`/market/assets/${id}`),
-  getHistory: (id: string, lastN?: number) => 
+  getHistory: (id: string, lastN?: number) =>
     client.get(`/market/assets/${id}/history`, { params: { last_n: lastN } }),
   advanceTick: (nTicks = 1) => client.post('/market/tick', { n_ticks: nTicks }),
   getStatus: () => client.get('/market/status'),
