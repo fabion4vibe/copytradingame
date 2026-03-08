@@ -87,7 +87,7 @@ Aggiorna questa sezione man mano che i task vengono completati.
 | TASK_06 | `task/06-algorithm-engine` | ✅ Completato | |
 | TASK_07 | `task/07-api-routers` | ✅ Completato | |
 | TASK_08 | `task/08-orchestrator` | ✅ Completato | |
-| TASK_09 | `task/09-frontend-setup` | ⬜ Non iniziato | |
+| TASK_09 | `task/09-frontend-setup` | ✅ Completato | |
 | TASK_10 | `task/10-frontend-retail` | ⬜ Non iniziato | |
 | TASK_11 | `task/11-frontend-manager` | ⬜ Non iniziato | |
 | TASK_12 | `task/12-didactic-layer` | ⬜ Non iniziato | |
