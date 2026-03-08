@@ -90,6 +90,6 @@ Aggiorna questa sezione man mano che i task vengono completati.
 | TASK_09 | `task/09-frontend-setup` | ✅ Completato | |
 | TASK_10 | `task/10-frontend-retail` | ✅ Completato | RetailSelector, PortfolioPanel, TradePanel, CopyTradingPanel, TradeHistoryPanel, RetailDashboard |
 | TASK_11 | `task/11-frontend-manager` | ✅ Completato | PlatformKpiPanel, PlatformPnLChart, CopyFlowPanel, TraderControlPanel, AlgorithmPanel, ManagerDashboard |
-| TASK_12 | `task/12-didactic-layer` | ⬜ Non iniziato | Placeholder slot predisposti in TASK_10/11 |
+| TASK_12 | `task/12-didactic-layer` | ✅ Completato | content/ (4 file), components/ (8 componenti), ConflictOfInterestBanner in App.tsx |
 
 Legend: ⬜ Non iniziato | 🔄 In corso | ✅ Completato | ❌ Bloccato

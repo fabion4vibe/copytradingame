@@ -155,8 +155,8 @@ export function AlgorithmPanel({ tick, onActionApplied }: AlgorithmPanelProps) {
                     </span>
                   </div>
 
-                  {/* Slot RecommendationExplainer — implementazione in TASK_12 */}
-                  <RecommendationExplainer traderId={rec.trader_id} action={rec.suggested_action} />
+                  {/* RecommendationExplainer — layer didattico TASK_12 */}
+                  <RecommendationExplainer recommendation={rec} />
 
                   {/* Azioni */}
                   <div className="flex gap-2">

@@ -95,9 +95,10 @@ export function RetailDashboard({ tick }: RetailDashboardProps) {
             <TradeHistoryPanel retailId={selectedRetailId} tick={tick} />
           </div>
 
-          {/* Snapshot didattico: retail vs piattaforma — placeholder TASK_12 */}
+          {/* Snapshot didattico: retail vs piattaforma — layer didattico TASK_12 */}
           <div className="bg-gray-900 border border-gray-800 rounded-lg p-4">
             <RetailVsPlatformSnapshot
+              retailId={selectedRetailId}
               retailPnl={currentSummary?.total_pnl ?? 0}
             />
           </div>

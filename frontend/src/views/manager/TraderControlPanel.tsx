@@ -242,8 +242,12 @@ export function TraderControlPanel({ professionals, onPhaseChanged }: TraderCont
             </div>
           </div>
 
-          {/* Slot PhaseExplainer — implementazione in TASK_12 */}
-          <PhaseExplainer phase={trader.phase} />
+          {/* PhaseExplainer — layer didattico TASK_12 */}
+          <PhaseExplainer
+            phase={trader.phase}
+            followersCount={trader.followers_count}
+            capitalExposed={trader.follower_capital_exposed}
+          />
 
           {/* Pulsanti cambio fase */}
           <div>

@@ -3,6 +3,7 @@ import { RoleSwitcher } from './components/RoleSwitcher';
 import { TickController } from './components/TickController';
 import { RetailDashboard } from './views/retail/RetailDashboard';
 import { ManagerDashboard } from './views/manager/ManagerDashboard';
+import { ConflictOfInterestBanner } from './didactic/components/ConflictOfInterestBanner';
 import type { AppRole } from './types';
 
 /**
@@ -41,7 +42,10 @@ export default function App() {
       </header>
 
       {/* Vista principale — tick passato come prop, non come key */}
-      <main className="max-w-screen-xl mx-auto px-6 py-6">
+      <main className="max-w-screen-xl mx-auto px-6 py-6 space-y-4">
+        {/* Banner conflitto di interesse — non dismissibile (TASK_12) */}
+        <ConflictOfInterestBanner role={role} />
+
         {role === 'retail' ? (
           <RetailDashboard tick={tick} />
         ) : (
