@@ -79,10 +79,10 @@ Aggiorna questa sezione man mano che i task vengono completati.
 
 | Task | Branch | Stato | Note |
 |------|--------|-------|------|
-| TASK_01 | `task/01-state` | ⬜ Non iniziato | |
-| TASK_02 | `task/02-market-simulator` | ⬜ Non iniziato | |
-| TASK_03 | `task/03-retail-trader` | ⬜ Non iniziato | |
-| TASK_04 | `task/04-professional-trader` | ⬜ Non iniziato | |
+| TASK_01 | `task/01-state` | ✅ Completato | Merged direttamente su develop |
+| TASK_02 | `task/02-market-simulator` | ✅ Completato | |
+| TASK_03 | `task/03-retail-trader` | ✅ Completato | |
+| TASK_04 | `task/04-professional-trader` | ✅ Completato | |
 | TASK_05 | `task/05-copy-engine` | ⬜ Non iniziato | |
 | TASK_06 | `task/06-algorithm-engine` | ⬜ Non iniziato | |
 | TASK_07 | `task/07-api-routers` | ⬜ Non iniziato | |
