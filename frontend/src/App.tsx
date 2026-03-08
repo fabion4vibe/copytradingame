@@ -10,8 +10,8 @@ import type { AppRole } from './types';
  *
  * Gestisce:
  * - Il ruolo attivo ('retail' | 'manager') per il routing tra le viste
- * - Il tick corrente, aggiornato dal TickController e propagato alle viste
- *   come dipendenza per il re-fetch dei dati
+ * - Il tick corrente, passato come prop alle viste per triggerare il re-fetch
+ *   senza rimontare l'intero componente (preserva lo stato locale, es. PnL history)
  */
 export default function App() {
   const [role, setRole] = useState<AppRole>('retail');
@@ -40,12 +40,12 @@ export default function App() {
         </div>
       </header>
 
-      {/* Vista principale */}
+      {/* Vista principale — tick passato come prop, non come key */}
       <main className="max-w-screen-xl mx-auto px-6 py-6">
         {role === 'retail' ? (
-          <RetailDashboard key={tick} />
+          <RetailDashboard tick={tick} />
         ) : (
-          <ManagerDashboard key={tick} />
+          <ManagerDashboard tick={tick} />
         )}
       </main>
     </div>
