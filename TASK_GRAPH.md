@@ -85,7 +85,7 @@ Aggiorna questa sezione man mano che i task vengono completati.
 | TASK_04 | `task/04-professional-trader` | ✅ Completato | |
 | TASK_05 | `task/05-copy-engine` | ✅ Completato | |
 | TASK_06 | `task/06-algorithm-engine` | ✅ Completato | |
-| TASK_07 | `task/07-api-routers` | ⬜ Non iniziato | |
+| TASK_07 | `task/07-api-routers` | ✅ Completato | |
 | TASK_08 | `task/08-orchestrator` | ⬜ Non iniziato | |
 | TASK_09 | `task/09-frontend-setup` | ⬜ Non iniziato | |
 | TASK_10 | `task/10-frontend-retail` | ⬜ Non iniziato | |
