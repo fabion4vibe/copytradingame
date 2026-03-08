@@ -12,6 +12,7 @@ from fastapi import APIRouter, HTTPException, Query
 from market.simulator import market_simulator
 from state import state
 from schemas import TickRequest
+from orchestrator import orchestrator
 
 router = APIRouter(prefix="/market", tags=["market"])
 
@@ -45,25 +46,12 @@ async def get_asset_history(
 @router.post("/tick")
 async def advance_tick(body: TickRequest):
     """
-    Avanza la simulazione di mercato di N tick.
+    Esegue N tick completi tramite l'orchestratore.
 
-    Restituisce un TickSummary per ogni tick eseguito con prezzi aggiornati.
-    trades_executed e platform_pnl_delta sono 0 finché l'orchestratore
-    (TASK_08) non gestisce il tick completo.
+    Ogni tick include: aggiornamento prezzi, strategie professionisti,
+    propagazione copy trade e ricalcolo esposizione follower.
     """
-    summaries = []
-    for _ in range(body.n_ticks):
-        pnl_before = state.platform_pnl
-        market_simulator.step(1)
-        summaries.append({
-            "tick": state.current_tick,
-            "prices": {
-                asset_id: asset.current_price
-                for asset_id, asset in state.assets.items()
-            },
-            "trades_executed": 0,
-            "platform_pnl_delta": round(state.platform_pnl - pnl_before, 4),
-        })
+    summaries = orchestrator.run_n_ticks(body.n_ticks)
     return {"tick": state.current_tick, "summaries": summaries}
 
 
