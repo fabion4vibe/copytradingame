@@ -88,8 +88,8 @@ Aggiorna questa sezione man mano che i task vengono completati.
 | TASK_07 | `task/07-api-routers` | ✅ Completato | |
 | TASK_08 | `task/08-orchestrator` | ✅ Completato | |
 | TASK_09 | `task/09-frontend-setup` | ✅ Completato | |
-| TASK_10 | `task/10-frontend-retail` | ⬜ Non iniziato | |
-| TASK_11 | `task/11-frontend-manager` | ⬜ Non iniziato | |
-| TASK_12 | `task/12-didactic-layer` | ⬜ Non iniziato | |
+| TASK_10 | `task/10-frontend-retail` | ✅ Completato | RetailSelector, PortfolioPanel, TradePanel, CopyTradingPanel, TradeHistoryPanel, RetailDashboard |
+| TASK_11 | `task/11-frontend-manager` | ✅ Completato | PlatformKpiPanel, PlatformPnLChart, CopyFlowPanel, TraderControlPanel, AlgorithmPanel, ManagerDashboard |
+| TASK_12 | `task/12-didactic-layer` | ⬜ Non iniziato | Placeholder slot predisposti in TASK_10/11 |
 
 Legend: ⬜ Non iniziato | 🔄 In corso | ✅ Completato | ❌ Bloccato
