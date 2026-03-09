@@ -13,12 +13,23 @@ Uso tipico negli altri moduli:
     state.platform_pnl += 150.0
 """
 
-from typing import Any, Dict, List
+import json
+import os
+import urllib.error
+import urllib.request
 from dataclasses import dataclass, field
+from typing import Any, Dict, List
 
 # NOTA: nessun import da altri moduli del progetto per evitare dipendenze
 # circolari. I tipi Any verranno sostituiti con le classi specifiche dai
 # task successivi man mano che i moduli vengono creati.
+
+# ── Configurazione JSONBin.io ──────────────────────────────────────────────
+# Le variabili d'ambiente sono None in locale: i metodi di persistenza
+# diventano no-op automaticamente.
+JSONBIN_BASE_URL = "https://api.jsonbin.io/v3/b"
+JSONBIN_KEY = os.environ.get("JSONBIN_KEY")        # None in locale
+JSONBIN_BIN_ID = os.environ.get("JSONBIN_BIN_ID")  # None in locale
 
 
 @dataclass
@@ -56,6 +67,85 @@ class SimulationState:
 
     # ── Storico globale ───────────────────────────────────────────────────
     trade_log: List[Any] = field(default_factory=list)             # tutti i trade eseguiti
+
+    def get_state_snapshot(self) -> dict:
+        """
+        Restituisce uno snapshot completo dello stato, serializzabile in JSON.
+        Usato sia per debug/export che per la persistenza remota (JSONBin).
+
+        Il trade_log viene troncato agli ultimi 500 elementi per contenere
+        le dimensioni del payload JSON entro limiti ragionevoli per JSONBin free tier.
+        """
+        return {
+            "current_tick":         self.current_tick,
+            "platform_pnl":         self.platform_pnl,
+            "platform_commissions": self.platform_commissions,
+            "platform_bonus_paid":  self.platform_bonus_paid,
+            "assets": {
+                asset_id: asset.to_dict()
+                for asset_id, asset in self.assets.items()
+            },
+            "retail_traders": {
+                trader_id: trader.to_dict()
+                for trader_id, trader in self.retail_traders.items()
+            },
+            "professional_traders": {
+                trader_id: trader.to_dict()
+                for trader_id, trader in self.professional_traders.items()
+            },
+            "copy_relations": [cr.to_dict() for cr in self.copy_relations],
+            "trade_log": [t.to_dict() for t in self.trade_log[-500:]],
+        }
+
+    def save_to_remote(self) -> None:
+        """
+        Persiste lo stato corrente su JSONBin.io via HTTP PUT.
+
+        Non fa nulla se JSONBIN_KEY o JSONBIN_BIN_ID non sono configurati
+        (comportamento atteso in ambiente locale).
+
+        Non solleva eccezioni: se il salvataggio fallisce (timeout, rete,
+        rate limit), il tick continua normalmente. Il prossimo salvataggio
+        programmato riproverà.
+        """
+        if not JSONBIN_KEY or not JSONBIN_BIN_ID:
+            return
+
+        url = f"{JSONBIN_BASE_URL}/{JSONBIN_BIN_ID}"
+        payload = json.dumps(self.get_state_snapshot()).encode("utf-8")
+        headers = {
+            "Content-Type": "application/json",
+            "X-Master-Key": JSONBIN_KEY,
+        }
+        req = urllib.request.Request(
+            url, data=payload, headers=headers, method="PUT"
+        )
+        try:
+            urllib.request.urlopen(req, timeout=3)
+        except (urllib.error.URLError, TimeoutError):
+            pass  # DIDACTIC: il fallimento del salvataggio non blocca la simulazione
+
+    @classmethod
+    def load_from_remote(cls) -> "dict | None":
+        """
+        Carica l'ultimo snapshot salvato da JSONBin.io.
+
+        Restituisce il dizionario dello snapshot se disponibile,
+        None in tutti gli altri casi (locale, rete assente, bin vuoto,
+        risposta malformata).
+        """
+        if not JSONBIN_KEY or not JSONBIN_BIN_ID:
+            return None
+
+        url = f"{JSONBIN_BASE_URL}/{JSONBIN_BIN_ID}/latest"
+        headers = {"X-Master-Key": JSONBIN_KEY}
+        req = urllib.request.Request(url, headers=headers)
+        try:
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+                return data.get("record")  # JSONBin wrappa il contenuto in "record"
+        except (urllib.error.URLError, TimeoutError, json.JSONDecodeError, KeyError):
+            return None
 
 
 # ── Singleton ─────────────────────────────────────────────────────────────
@@ -112,23 +202,12 @@ def _serialize(obj: Any) -> Any:
 
 def get_state_snapshot() -> dict:
     """
-    Restituisce uno snapshot serializzabile (JSON-compatibile) dello stato corrente.
+    Wrapper module-level per state.get_state_snapshot().
 
-    Utile per debug, export e ispezione dello stato dalla console.
-    Ogni valore viene convertito tramite _serialize(), che chiama to_dict()
-    sugli oggetti di dominio quando disponibile.
+    Mantenuto per compatibilità con i moduli che importano questa funzione
+    direttamente (es. orchestrator.py).
 
     Returns:
         dict con tutti i campi di SimulationState in formato JSON-compatibile.
     """
-    return {
-        "current_tick": state.current_tick,
-        "assets": _serialize(state.assets),
-        "retail_traders": _serialize(state.retail_traders),
-        "professional_traders": _serialize(state.professional_traders),
-        "copy_relations": _serialize(state.copy_relations),
-        "platform_pnl": state.platform_pnl,
-        "platform_commissions": state.platform_commissions,
-        "platform_bonus_paid": state.platform_bonus_paid,
-        "trade_log": _serialize(state.trade_log),
-    }
+    return state.get_state_snapshot()

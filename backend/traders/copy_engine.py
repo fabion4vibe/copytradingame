@@ -53,6 +53,27 @@ class CopyRelation:
     start_tick: int
     active: bool = True
 
+    def to_dict(self) -> dict:
+        """Serializza la relazione di copy trading in un dizionario JSON-compatibile."""
+        return {
+            "retail_id": self.retail_id,
+            "professional_id": self.professional_id,
+            "allocation_pct": self.allocation_pct,
+            "start_tick": self.start_tick,
+            "active": self.active,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "CopyRelation":
+        """Ricostruisce una CopyRelation da un dizionario snapshot."""
+        return cls(
+            retail_id=data["retail_id"],
+            professional_id=data["professional_id"],
+            allocation_pct=data["allocation_pct"],
+            start_tick=data["start_tick"],
+            active=data.get("active", True),
+        )
+
 
 # ── Engine ─────────────────────────────────────────────────────────────────
 
