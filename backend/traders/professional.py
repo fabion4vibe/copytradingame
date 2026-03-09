@@ -69,6 +69,31 @@ class StrategyProfile:
     target_capital_exposed: float
     bonus_per_tick_in_C: float
 
+    def to_dict(self) -> dict:
+        """Serializza il profilo strategico in un dizionario JSON-compatibile."""
+        return {
+            "expected_value": self.expected_value,
+            "risk_level": self.risk_level,
+            "trade_frequency": self.trade_frequency,
+            "min_followers_for_B": self.min_followers_for_B,
+            "min_followers_for_C": self.min_followers_for_C,
+            "target_capital_exposed": self.target_capital_exposed,
+            "bonus_per_tick_in_C": self.bonus_per_tick_in_C,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "StrategyProfile":
+        """Ricostruisce un StrategyProfile da un dizionario snapshot."""
+        return cls(
+            expected_value=data["expected_value"],
+            risk_level=data["risk_level"],
+            trade_frequency=data["trade_frequency"],
+            min_followers_for_B=data["min_followers_for_B"],
+            min_followers_for_C=data["min_followers_for_C"],
+            target_capital_exposed=data["target_capital_exposed"],
+            bonus_per_tick_in_C=data["bonus_per_tick_in_C"],
+        )
+
 
 # ── Profili strategia predefiniti ─────────────────────────────────────────
 
@@ -154,6 +179,46 @@ class ProfessionalTrader:
     trade_history: List[Any] = field(default_factory=list)
     phase_history: List[dict] = field(default_factory=list)
     initial_balance: float = 50000.0
+
+    def to_dict(self) -> dict:
+        """Serializza il trader professionista in un dizionario JSON-compatibile."""
+        return {
+            "id": self.id,
+            "name": self.name,
+            "phase": self.phase.value,
+            "strategy": self.strategy.to_dict(),
+            "balance": self.balance,
+            "portfolio": dict(self.portfolio),
+            "avg_buy_prices": dict(self.avg_buy_prices),
+            "pnl_personal": self.pnl_personal,
+            "bonus_earned": self.bonus_earned,
+            "followers": list(self.followers),
+            "follower_capital_exposed": self.follower_capital_exposed,
+            "trade_history": [t.to_dict() for t in self.trade_history],
+            "phase_history": list(self.phase_history),
+            "initial_balance": self.initial_balance,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "ProfessionalTrader":
+        """Ricostruisce un ProfessionalTrader da un dizionario snapshot."""
+        trader = cls(
+            id=data["id"],
+            name=data["name"],
+            phase=TraderPhase(data["phase"]),
+            strategy=StrategyProfile.from_dict(data["strategy"]),
+            balance=data["balance"],
+            portfolio=data.get("portfolio", {}),
+            avg_buy_prices=data.get("avg_buy_prices", {}),
+            pnl_personal=data.get("pnl_personal", 0.0),
+            bonus_earned=data.get("bonus_earned", 0.0),
+            followers=data.get("followers", []),
+            follower_capital_exposed=data.get("follower_capital_exposed", 0.0),
+            phase_history=data.get("phase_history", []),
+            initial_balance=data.get("initial_balance", 50000.0),
+        )
+        trader.trade_history = [Trade.from_dict(t) for t in data.get("trade_history", [])]
+        return trader
 
 
 # ── Engine ─────────────────────────────────────────────────────────────────
