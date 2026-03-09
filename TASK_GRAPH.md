@@ -91,5 +91,6 @@ Aggiorna questa sezione man mano che i task vengono completati.
 | TASK_10 | `task/10-frontend-retail` | ✅ Completato | RetailSelector, PortfolioPanel, TradePanel, CopyTradingPanel, TradeHistoryPanel, RetailDashboard |
 | TASK_11 | `task/11-frontend-manager` | ✅ Completato | PlatformKpiPanel, PlatformPnLChart, CopyFlowPanel, TraderControlPanel, AlgorithmPanel, ManagerDashboard |
 | TASK_12 | `task/12-didactic-layer` | ✅ Completato | content/ (4 file), components/ (8 componenti), ConflictOfInterestBanner in App.tsx |
+| TASK_13 | `task/13-remote-persistence` | ✅ Completato | to_dict/from_dict su tutti i modelli, save_to_remote/load_from_remote su SimulationState, lifespan aggiornato |
 
 Legend: ⬜ Non iniziato | 🔄 In corso | ✅ Completato | ❌ Bloccato

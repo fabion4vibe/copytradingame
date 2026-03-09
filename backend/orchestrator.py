@@ -116,9 +116,15 @@ class TickOrchestrator:
 
             self._tick_log.append(summary)
 
-            # Step 5: snapshot opzionale
+            # Step 5: snapshot opzionale (file locale)
             if os.environ.get("SAVE_SNAPSHOTS", "").lower() == "true":
                 self._save_snapshot()
+
+            # Salvataggio remoto ogni 100 tick.
+            # In locale JSONBIN_KEY non è configurato, save_to_remote() non fa nulla.
+            # In produzione salva lo snapshot su JSONBin per sopravvivere ai riavvii di Render.
+            if state.current_tick % 100 == 0:
+                state.save_to_remote()
 
             return summary
 

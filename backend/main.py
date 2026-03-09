@@ -17,10 +17,44 @@ from traders.router import retail_router, professional_router
 from algorithm.router import router as algorithm_router
 from manager.router import router as manager_router
 
+from market.asset import Asset
 from market.simulator import market_simulator
-from traders.professional import professional_engine
-from traders.retail import retail_engine
-from state import state
+from traders.copy_engine import CopyRelation
+from traders.professional import ProfessionalTrader, professional_engine
+from traders.retail import RetailTrader, Trade, retail_engine
+from state import SimulationState, state
+
+
+def _restore_state_from_snapshot(snapshot: dict) -> None:
+    """
+    Ripristina lo stato globale da un dizionario snapshot.
+
+    Il formato del dizionario è quello prodotto da state.get_state_snapshot().
+    Campi mancanti nello snapshot vengono ignorati (default invariato).
+
+    Args:
+        snapshot: dizionario snapshot prodotto da SimulationState.get_state_snapshot().
+    """
+    state.current_tick         = snapshot.get("current_tick", 0)
+    state.platform_pnl         = snapshot.get("platform_pnl", 0.0)
+    state.platform_commissions = snapshot.get("platform_commissions", 0.0)
+    state.platform_bonus_paid  = snapshot.get("platform_bonus_paid", 0.0)
+
+    for asset_id, asset_data in snapshot.get("assets", {}).items():
+        state.assets[asset_id] = Asset.from_dict(asset_data)
+
+    for trader_id, trader_data in snapshot.get("retail_traders", {}).items():
+        state.retail_traders[trader_id] = RetailTrader.from_dict(trader_data)
+
+    for trader_id, trader_data in snapshot.get("professional_traders", {}).items():
+        state.professional_traders[trader_id] = ProfessionalTrader.from_dict(trader_data)
+
+    state.copy_relations = [
+        CopyRelation.from_dict(cr) for cr in snapshot.get("copy_relations", [])
+    ]
+
+    # Ultimi 500 trade (il snapshot è già troncato, ma dal_dict è idempotente)
+    state.trade_log = [Trade.from_dict(t) for t in snapshot.get("trade_log", [])]
 
 
 @asynccontextmanager
@@ -28,14 +62,18 @@ async def lifespan(app: FastAPI):
     """
     Gestisce il ciclo di vita dell'applicazione.
 
-    All'avvio inizializza la simulazione con dati di default:
-    - 5 asset di mercato (SIM-A … SIM-E)
-    - 3 trader professionisti in fase REPUTATION_BUILD
-    - 10 trader retail simulati con bilanci casuali
+    Tenta prima il ripristino da JSONBin (produzione su Render).
+    Se non disponibile o fallisce, inizializza da zero (locale + primo avvio).
     """
-    market_simulator.initialize_default_assets()
-    professional_engine.create_default_professionals(3)
-    retail_engine.create_simulated_retailers(10)
+    snapshot = SimulationState.load_from_remote()
+
+    if snapshot:
+        _restore_state_from_snapshot(snapshot)
+    else:
+        market_simulator.initialize_default_assets()
+        professional_engine.create_default_professionals(3)
+        retail_engine.create_simulated_retailers(10)
+
     yield
     # Shutdown: nessuna risorsa da liberare (stato in memoria)
 

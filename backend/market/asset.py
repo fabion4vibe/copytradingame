@@ -69,6 +69,31 @@ class Asset:
             return 0.0
         return (self.current_price - self.initial_price) / self.initial_price
 
+    @classmethod
+    def from_dict(cls, data: dict) -> "Asset":
+        """
+        Ricostruisce un Asset da un dizionario snapshot.
+
+        Inizializza price_history con il solo current_price (il price_history
+        non viene incluso nel snapshot per contenere le dimensioni del payload).
+
+        Args:
+            data: dizionario prodotto da to_dict().
+
+        Returns:
+            Istanza Asset ripristinata.
+        """
+        asset = cls(
+            id=data["id"],
+            symbol=data["symbol"],
+            initial_price=data["initial_price"],
+            current_price=data["current_price"],
+            volatility=data["volatility"],
+            drift=data["drift"],
+        )
+        asset.price_history = [data["current_price"]]
+        return asset
+
     def volatility_realized(self) -> float:
         """
         Volatilità realizzata: deviazione standard dei rendimenti logaritmici storici.

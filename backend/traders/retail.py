@@ -60,6 +60,37 @@ class Trade:
     copied_from: Optional[str] = None
     pnl_realized: float = 0.0
 
+    def to_dict(self) -> dict:
+        """Serializza il trade in un dizionario JSON-compatibile."""
+        return {
+            "id": self.id,
+            "trader_id": self.trader_id,
+            "asset_id": self.asset_id,
+            "action": self.action,
+            "quantity": self.quantity,
+            "price": self.price,
+            "timestamp": self.timestamp,
+            "is_copy": self.is_copy,
+            "copied_from": self.copied_from,
+            "pnl_realized": self.pnl_realized,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "Trade":
+        """Ricostruisce un Trade da un dizionario snapshot."""
+        return cls(
+            id=data["id"],
+            trader_id=data["trader_id"],
+            asset_id=data["asset_id"],
+            action=data["action"],
+            quantity=data["quantity"],
+            price=data["price"],
+            timestamp=data["timestamp"],
+            is_copy=data.get("is_copy", False),
+            copied_from=data.get("copied_from"),
+            pnl_realized=data.get("pnl_realized", 0.0),
+        )
+
 
 # ── Dataclass RetailTrader ─────────────────────────────────────────────────
 
@@ -89,6 +120,36 @@ class RetailTrader:
     trade_history: List[Trade] = field(default_factory=list)
     copied_traders: List[str] = field(default_factory=list)
     initial_balance: float = 10000.0
+
+    def to_dict(self) -> dict:
+        """Serializza il retail trader in un dizionario JSON-compatibile."""
+        return {
+            "id": self.id,
+            "name": self.name,
+            "is_real_user": self.is_real_user,
+            "balance": self.balance,
+            "portfolio": dict(self.portfolio),
+            "avg_buy_prices": dict(self.avg_buy_prices),
+            "trade_history": [t.to_dict() for t in self.trade_history],
+            "copied_traders": list(self.copied_traders),
+            "initial_balance": self.initial_balance,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "RetailTrader":
+        """Ricostruisce un RetailTrader da un dizionario snapshot."""
+        trader = cls(
+            id=data["id"],
+            name=data["name"],
+            is_real_user=data["is_real_user"],
+            balance=data["balance"],
+            portfolio=data.get("portfolio", {}),
+            avg_buy_prices=data.get("avg_buy_prices", {}),
+            copied_traders=data.get("copied_traders", []),
+            initial_balance=data.get("initial_balance", 10000.0),
+        )
+        trader.trade_history = [Trade.from_dict(t) for t in data.get("trade_history", [])]
+        return trader
 
 
 # ── Engine ─────────────────────────────────────────────────────────────────
