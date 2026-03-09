@@ -7,4 +7,6 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
+  // base path richiesto da GitHub Pages: https://<user>.github.io/<repo>/
+  base: '/copytradingame/',
 })
