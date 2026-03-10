@@ -52,6 +52,30 @@ export default function App() {
           <ManagerDashboard tick={tick} />
         )}
       </main>
+
+      {/* Footer licenza */}
+      <footer className="border-t border-gray-800 mt-10 py-4 px-6 text-center text-xs text-gray-600">
+        <p>
+          &copy; FC —{' '}
+          <a
+            href="https://github.com/fabion4vibe/copytradingame"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline hover:text-gray-400 transition-colors"
+          >
+            github.com/fabion4vibe/copytradingame
+          </a>
+          {' '}·{' '}
+          <a
+            href="https://creativecommons.org/licenses/by/4.0/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline hover:text-gray-400 transition-colors"
+          >
+            CC BY 4.0
+          </a>
+        </p>
+      </footer>
     </div>
   );
 }
