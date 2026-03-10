@@ -1,9 +1,9 @@
 """
 algorithm/router.py
 -------------------
-Router FastAPI per gli endpoint /api/v1/algorithm.
+FastAPI router for the /api/v1/algorithm endpoints.
 
-Nessuna logica di dominio: chiama scorer e recommender e restituisce i risultati.
+No domain logic: delegates to scorer and recommender and returns the results.
 """
 
 from fastapi import APIRouter, HTTPException
@@ -17,19 +17,19 @@ router = APIRouter(prefix="/algorithm", tags=["algorithm"])
 
 @router.get("/recommendations")
 async def get_recommendations():
-    """Restituisce le raccomandazioni strategiche ordinate per priorità."""
+    """Returns strategic recommendations sorted by priority."""
     return strategy_recommender.get_recommendations()
 
 
 @router.get("/rankings")
 async def get_rankings():
-    """Restituisce il ranking dei trader professionisti per score di monetizzazione."""
+    """Returns the professional trader ranking by monetisation score."""
     return trader_scorer.rank_all_traders()
 
 
 @router.post("/simulate-scenario")
 async def simulate_scenario(body: ScenarioRequest):
-    """Stima l'effetto di uno scenario su N tick futuri (modello statistico)."""
+    """Estimates the effect of a scenario over N future ticks (statistical model)."""
     try:
         return strategy_recommender.simulate_scenario(
             trader_id=body.trader_id,

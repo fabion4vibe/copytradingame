@@ -1,10 +1,10 @@
 """
 simulator.py
 ------------
-Implementa `MarketSimulator`: gestisce tutti gli asset simulati e avanza
-i prezzi tick per tick tramite il modello GBM (Geometric Brownian Motion).
+Implements `MarketSimulator`: manages all simulated assets and advances
+prices tick by tick using the GBM (Geometric Brownian Motion) model.
 
-Solo questo modulo è autorizzato a modificare `state.current_tick`.
+Only this module is authorised to modify `state.current_tick`.
 """
 
 import numpy as np
@@ -14,40 +14,40 @@ from market.asset import Asset
 from state import state
 
 
-# ── Costante temporale ────────────────────────────────────────────────────
-# dt = 1 significa che ogni tick corrisponde a un'unità di tempo unitaria.
-# Tutte le grandezze (drift, volatilità) sono espresse per tick.
+# ── Time constant ─────────────────────────────────────────────────────────
+# dt = 1 means each tick corresponds to one unit of time.
+# All quantities (drift, volatility) are expressed per tick.
 DT: float = 1.0
 
 
 class MarketSimulator:
     """
-    Gestisce la simulazione dei prezzi per tutti gli asset registrati.
+    Manages price simulation for all registered assets.
 
-    Responsabilità:
-    - Inizializzare gli asset di default
-    - Avanzare i prezzi di tutti gli asset applicando il GBM discreto
-    - Aggiornare state.current_tick (unico modulo autorizzato a farlo)
-    - Fornire accesso ai prezzi correnti e alla serie storica
+    Responsibilities:
+    - Initialise the default assets
+    - Advance prices for all assets applying the discrete GBM
+    - Update state.current_tick (only this module is authorised to do so)
+    - Provide access to current prices and the price history
 
-    Modello GBM discreto:
+    Discrete GBM model:
         P(t+1) = P(t) * exp( (μ - σ²/2) * dt  +  σ * √dt * Z )
-        dove Z ~ N(0, 1)
+        where Z ~ N(0, 1)
     """
 
     def initialize_default_assets(self) -> None:
         """
-        Crea i 5 asset simulati predefiniti e li inserisce in state.assets.
+        Creates the 5 predefined simulated assets and inserts them into state.assets.
 
-        Asset creati:
-            SIM-A: prezzo 100, σ=0.02, μ=+0.001  — stabile, lieve crescita
-            SIM-B: prezzo  50, σ=0.04, μ= 0.000  — neutro, alta volatilità
-            SIM-C: prezzo 200, σ=0.01, μ=+0.002  — crescita costante, bassa vol
-            SIM-D: prezzo  75, σ=0.05, μ=-0.001  — volatile, lieve calo strutturale
-            SIM-E: prezzo  30, σ=0.03, μ= 0.000  — neutro, volatilità media
+        Assets created:
+            SIM-A: price 100, σ=0.02, μ=+0.001  — stable, slight upward drift
+            SIM-B: price  50, σ=0.04, μ= 0.000  — neutral, high volatility
+            SIM-C: price 200, σ=0.01, μ=+0.002  — steady growth, low volatility
+            SIM-D: price  75, σ=0.05, μ=-0.001  — volatile, slight structural decline
+            SIM-E: price  30, σ=0.03, μ= 0.000  — neutral, medium volatility
 
-        Ogni asset viene inserito in state.assets con chiave = asset.id.
-        price_history viene inizializzato con il solo prezzo iniziale (tick 0).
+        Each asset is inserted in state.assets with key = asset.id.
+        price_history is initialised with only the initial price (tick 0).
         """
         default_configs = [
             ("sim-a", "SIM-A", 100.0, 0.02,  0.001),
@@ -71,20 +71,20 @@ class MarketSimulator:
 
     def step(self, n_ticks: int = 1) -> None:
         """
-        Avanza la simulazione di n_ticks applicando il GBM discreto a ogni asset.
+        Advances the simulation by n_ticks applying the discrete GBM to every asset.
 
-        Per ogni tick:
-            1. Per ogni asset in state.assets, calcola il nuovo prezzo:
+        For each tick:
+            1. For every asset in state.assets, compute the new price:
                P(t+1) = P(t) * exp( (μ - σ²/2) * dt  +  σ * √dt * Z )
-               con Z ~ N(0,1) campionato indipendentemente per ogni asset e tick.
-            2. Aggiorna asset.current_price e appende a asset.price_history.
-            3. Incrementa state.current_tick di 1.
+               with Z ~ N(0,1) sampled independently per asset and per tick.
+            2. Updates asset.current_price and appends to asset.price_history.
+            3. Increments state.current_tick by 1.
 
-        Il prezzo è vincolato a rimanere >= 0.01 (il GBM garantisce positività
-        matematicamente, ma il clamp protegge da underflow numerici estremi).
+        Price is clamped to >= 0.01 (GBM guarantees positivity mathematically,
+        but the clamp guards against extreme numerical underflow).
 
         Args:
-            n_ticks: numero di tick da simulare in sequenza. Default = 1.
+            n_ticks: number of ticks to simulate in sequence. Default = 1.
         """
         for _ in range(n_ticks):
             for asset in state.assets.values():
@@ -92,50 +92,50 @@ class MarketSimulator:
                 sigma = asset.volatility
                 p_t = asset.current_price
 
-                # GBM discreto: drift corretto per la convessità (Itô)
+                # Discrete GBM: drift corrected for convexity (Itô)
                 z = float(np.random.normal(0.0, 1.0))
                 exponent = (mu - 0.5 * sigma ** 2) * DT + sigma * np.sqrt(DT) * z
                 p_next = p_t * np.exp(exponent)
 
-                # Protezione contro underflow (teoricamente impossibile con GBM)
+                # Guard against underflow (theoretically impossible with GBM)
                 p_next = max(p_next, 0.01)
 
                 asset.current_price = p_next
                 asset.price_history.append(p_next)
 
-            # Incremento tick dopo aver aggiornato tutti gli asset
+            # Increment tick after all assets have been updated
             state.current_tick += 1
 
     def get_price(self, asset_id: str) -> float:
         """
-        Restituisce il prezzo corrente di un asset.
+        Returns the current price of an asset.
 
         Args:
-            asset_id: identificatore dell'asset (es. "sim-a").
+            asset_id: asset identifier (e.g. "sim-a").
 
         Returns:
-            float: prezzo corrente dell'asset.
+            float: current price of the asset.
 
         Raises:
-            KeyError: se asset_id non esiste in state.assets.
+            KeyError: if asset_id does not exist in state.assets.
         """
         return state.assets[asset_id].current_price
 
     def get_history(self, asset_id: str, last_n: Optional[int] = None) -> List[float]:
         """
-        Restituisce la serie storica dei prezzi di un asset.
+        Returns the price history of an asset.
 
         Args:
-            asset_id: identificatore dell'asset.
-            last_n:   se specificato, restituisce solo gli ultimi N valori.
-                      Se None o maggiore della lunghezza totale, restituisce
-                      l'intera serie storica.
+            asset_id: asset identifier.
+            last_n:   if specified, returns only the last N values.
+                      If None or greater than the total length, returns
+                      the entire price history.
 
         Returns:
-            List[float]: serie storica (o sottoinsieme finale).
+            List[float]: price series (or final subset).
 
         Raises:
-            KeyError: se asset_id non esiste in state.assets.
+            KeyError: if asset_id does not exist in state.assets.
         """
         history = state.assets[asset_id].price_history
         if last_n is not None and last_n < len(history):
@@ -144,19 +144,19 @@ class MarketSimulator:
 
     def add_asset(self, asset: Asset) -> None:
         """
-        Aggiunge un asset personalizzato alla simulazione.
+        Adds a custom asset to the simulation.
 
-        Se price_history è vuoto, lo inizializza con il current_price corrente.
-        L'asset viene inserito in state.assets con chiave = asset.id.
+        If price_history is empty, initialises it with the current current_price.
+        The asset is inserted in state.assets with key = asset.id.
 
         Args:
-            asset: istanza di Asset da aggiungere.
+            asset: Asset instance to add.
         """
         if not asset.price_history:
             asset.price_history = [asset.current_price]
         state.assets[asset.id] = asset
 
 
-# ── Istanza globale ───────────────────────────────────────────────────────
-# Importabile direttamente: from market.simulator import market_simulator
+# ── Global instance ───────────────────────────────────────────────────────
+# Importable directly: from market.simulator import market_simulator
 market_simulator = MarketSimulator()

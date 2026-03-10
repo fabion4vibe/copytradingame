@@ -1,10 +1,10 @@
 """
 main.py
 -------
-Entry point dell'applicazione FastAPI — Trading Platform Simulator.
+FastAPI application entry point — Trading Platform Simulator.
 
-Configura CORS, monta tutti i router e inizializza lo stato al avvio.
-Avviare con: uvicorn main:app --reload --port 8000
+Configures CORS, mounts all routers and initialises the state on startup.
+Run with: uvicorn main:app --reload --port 8000
 """
 
 from contextlib import asynccontextmanager
@@ -27,13 +27,13 @@ from state import SimulationState, state
 
 def _restore_state_from_snapshot(snapshot: dict) -> None:
     """
-    Ripristina lo stato globale da un dizionario snapshot.
+    Restores the global state from a snapshot dictionary.
 
-    Il formato del dizionario è quello prodotto da state.get_state_snapshot().
-    Campi mancanti nello snapshot vengono ignorati (default invariato).
+    The dictionary format is the one produced by state.get_state_snapshot().
+    Fields missing from the snapshot are ignored (default value unchanged).
 
     Args:
-        snapshot: dizionario snapshot prodotto da SimulationState.get_state_snapshot().
+        snapshot: snapshot dictionary produced by SimulationState.get_state_snapshot().
     """
     state.current_tick         = snapshot.get("current_tick", 0)
     state.platform_pnl         = snapshot.get("platform_pnl", 0.0)
@@ -53,17 +53,17 @@ def _restore_state_from_snapshot(snapshot: dict) -> None:
         CopyRelation.from_dict(cr) for cr in snapshot.get("copy_relations", [])
     ]
 
-    # Ultimi 500 trade (il snapshot è già troncato, ma dal_dict è idempotente)
+    # Last 500 trades (snapshot is already truncated, but from_dict is idempotent)
     state.trade_log = [Trade.from_dict(t) for t in snapshot.get("trade_log", [])]
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """
-    Gestisce il ciclo di vita dell'applicazione.
+    Manages the application lifecycle.
 
-    Tenta prima il ripristino da JSONBin (produzione su Render).
-    Se non disponibile o fallisce, inizializza da zero (locale + primo avvio).
+    First attempts to restore state from JSONBin (production on Render).
+    If unavailable or failing, initialises from scratch (local + first boot).
     """
     snapshot = SimulationState.load_from_remote()
 
@@ -75,14 +75,14 @@ async def lifespan(app: FastAPI):
         retail_engine.create_simulated_retailers(10)
 
     yield
-    # Shutdown: nessuna risorsa da liberare (stato in memoria)
+    # Shutdown: no resources to release (state is in-memory)
 
 
 app = FastAPI(
     title="Trading Platform Simulator",
     description=(
-        "Piattaforma didattica locale che simula meccanismi di trading, "
-        "copy trading e conflitti di interesse."
+        "Local educational platform simulating trading mechanics, "
+        "copy trading and conflicts of interest."
     ),
     version="1.0.0",
     lifespan=lifespan,
@@ -92,7 +92,7 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:5173",          # sviluppo locale
+        "http://localhost:5173",          # local development
         "https://fabion4vibe.github.io",  # GitHub Pages
     ],
     allow_credentials=True,
@@ -114,5 +114,5 @@ app.include_router(manager_router,      prefix=API_PREFIX)
 
 @app.get("/health", tags=["health"])
 async def health_check():
-    """Endpoint di health check. Restituisce lo stato dell'applicazione e il tick corrente."""
+    """Health check endpoint. Returns application status and current tick."""
     return {"status": "ok", "tick": state.current_tick}

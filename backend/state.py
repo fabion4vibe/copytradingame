@@ -1,11 +1,11 @@
 """
 state.py
 --------
-Singola fonte di verità per l'intera simulazione.
-Tutti i moduli backend importano da questo file per leggere e scrivere
-lo stato condiviso. Non esiste database: tutto vive in memoria.
+Single source of truth for the entire simulation.
+All backend modules import from this file to read and write
+the shared state. No database: everything lives in memory.
 
-Uso tipico negli altri moduli:
+Typical usage in other modules:
     from state import state
 
     state.current_tick += 1
@@ -20,13 +20,13 @@ import urllib.request
 from dataclasses import dataclass, field
 from typing import Any, Dict, List
 
-# NOTA: nessun import da altri moduli del progetto per evitare dipendenze
-# circolari. I tipi Any verranno sostituiti con le classi specifiche dai
-# task successivi man mano che i moduli vengono creati.
+# NOTE: no imports from other project modules to avoid circular dependencies.
+# Any types will be replaced with specific classes by subsequent tasks
+# as the modules are created.
 
-# ── Configurazione JSONBin.io ──────────────────────────────────────────────
-# Le variabili d'ambiente sono None in locale: i metodi di persistenza
-# diventano no-op automaticamente.
+# ── JSONBin.io configuration ───────────────────────────────────────────────
+# Environment variables are None locally: persistence methods
+# become no-ops automatically.
 JSONBIN_BASE_URL = "https://api.jsonbin.io/v3/b"
 JSONBIN_KEY = os.environ.get("JSONBIN_KEY")        # None in locale
 JSONBIN_BIN_ID = os.environ.get("JSONBIN_BIN_ID")  # None in locale
@@ -35,46 +35,46 @@ JSONBIN_BIN_ID = os.environ.get("JSONBIN_BIN_ID")  # None in locale
 @dataclass
 class SimulationState:
     """
-    Stato globale della simulazione, condiviso tra tutti i moduli backend.
+    Global simulation state, shared across all backend modules.
 
-    Campi:
-        current_tick          — tick corrente della simulazione (avanzato da MarketSimulator)
-        assets                — dizionario asset_id → Asset (popolato da TASK_02)
-        retail_traders        — dizionario id → RetailTrader (popolato da TASK_03)
-        professional_traders  — dizionario id → ProfessionalTrader (popolato da TASK_04)
-        copy_relations        — lista di CopyRelation attive e inattive (popolata da TASK_05)
-        platform_pnl          — profitto cumulativo della piattaforma (perdite nette retail)
-        platform_commissions  — commissioni accumulate (non usate nei task iniziali)
-        platform_bonus_paid   — totale bonus pagati ai trader professionisti in fase C
-        trade_log             — log globale di tutti i trade eseguiti (retail + professionisti)
+    Fields:
+        current_tick          — current simulation tick (advanced by MarketSimulator)
+        assets                — dict asset_id → Asset (populated by TASK_02)
+        retail_traders        — dict id → RetailTrader (populated by TASK_03)
+        professional_traders  — dict id → ProfessionalTrader (populated by TASK_04)
+        copy_relations        — list of active and inactive CopyRelations (populated by TASK_05)
+        platform_pnl          — cumulative platform profit (net retail losses)
+        platform_commissions  — accumulated commissions (not used in initial tasks)
+        platform_bonus_paid   — total bonuses paid to professional traders in phase C
+        trade_log             — global log of all trades executed (retail + professionals)
     """
 
-    # ── Mercato ───────────────────────────────────────────────────────────
+    # ── Market ────────────────────────────────────────────────────────────
     current_tick: int = 0
     assets: Dict[str, Any] = field(default_factory=dict)          # asset_id → Asset
 
-    # ── Trader ────────────────────────────────────────────────────────────
+    # ── Traders ───────────────────────────────────────────────────────────
     retail_traders: Dict[str, Any] = field(default_factory=dict)        # id → RetailTrader
     professional_traders: Dict[str, Any] = field(default_factory=dict)  # id → ProfessionalTrader
 
     # ── Copy trading ──────────────────────────────────────────────────────
-    copy_relations: List[Any] = field(default_factory=list)        # lista CopyRelation
+    copy_relations: List[Any] = field(default_factory=list)        # list of CopyRelation
 
-    # ── Economia piattaforma ──────────────────────────────────────────────
-    platform_pnl: float = 0.0           # profitto cumulativo (dalle perdite retail)
-    platform_commissions: float = 0.0   # commissioni accumulate
-    platform_bonus_paid: float = 0.0    # bonus pagati ai professionisti in fase C
+    # ── Platform economics ────────────────────────────────────────────────
+    platform_pnl: float = 0.0           # cumulative profit (from retail losses)
+    platform_commissions: float = 0.0   # accumulated commissions
+    platform_bonus_paid: float = 0.0    # bonuses paid to professionals in phase C
 
-    # ── Storico globale ───────────────────────────────────────────────────
-    trade_log: List[Any] = field(default_factory=list)             # tutti i trade eseguiti
+    # ── Global history ────────────────────────────────────────────────────
+    trade_log: List[Any] = field(default_factory=list)             # all trades executed
 
     def get_state_snapshot(self) -> dict:
         """
-        Restituisce uno snapshot completo dello stato, serializzabile in JSON.
-        Usato sia per debug/export che per la persistenza remota (JSONBin).
+        Returns a complete snapshot of the state, serializable to JSON.
+        Used both for debug/export and for remote persistence (JSONBin).
 
-        Il trade_log viene troncato agli ultimi 500 elementi per contenere
-        le dimensioni del payload JSON entro limiti ragionevoli per JSONBin free tier.
+        The trade_log is truncated to the last 500 entries to keep
+        the JSON payload size within reasonable limits for the JSONBin free tier.
         """
         return {
             "current_tick":         self.current_tick,
@@ -99,14 +99,14 @@ class SimulationState:
 
     def save_to_remote(self) -> None:
         """
-        Persiste lo stato corrente su JSONBin.io via HTTP PUT.
+        Persists the current state to JSONBin.io via HTTP PUT.
 
-        Non fa nulla se JSONBIN_KEY o JSONBIN_BIN_ID non sono configurati
-        (comportamento atteso in ambiente locale).
+        Does nothing if JSONBIN_KEY or JSONBIN_BIN_ID are not configured
+        (expected behaviour in local environment).
 
-        Non solleva eccezioni: se il salvataggio fallisce (timeout, rete,
-        rate limit), il tick continua normalmente. Il prossimo salvataggio
-        programmato riproverà.
+        Does not raise exceptions: if saving fails (timeout, network,
+        rate limit), the tick continues normally. The next scheduled
+        save will retry.
         """
         if not JSONBIN_KEY or not JSONBIN_BIN_ID:
             return
@@ -123,16 +123,16 @@ class SimulationState:
         try:
             urllib.request.urlopen(req, timeout=3)
         except (urllib.error.URLError, TimeoutError):
-            pass  # DIDACTIC: il fallimento del salvataggio non blocca la simulazione
+            pass  # DIDACTIC: save failure does not block the simulation tick
 
     @classmethod
     def load_from_remote(cls) -> "dict | None":
         """
-        Carica l'ultimo snapshot salvato da JSONBin.io.
+        Loads the latest snapshot saved on JSONBin.io.
 
-        Restituisce il dizionario dello snapshot se disponibile,
-        None in tutti gli altri casi (locale, rete assente, bin vuoto,
-        risposta malformata).
+        Returns the snapshot dictionary if available,
+        None in all other cases (local env, no network, empty bin,
+        malformed response).
         """
         if not JSONBIN_KEY or not JSONBIN_BIN_ID:
             return None
@@ -143,28 +143,28 @@ class SimulationState:
         try:
             with urllib.request.urlopen(req, timeout=5) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
-                return data.get("record")  # JSONBin wrappa il contenuto in "record"
+                return data.get("record")  # JSONBin wraps the content under the "record" key
         except (urllib.error.URLError, TimeoutError, json.JSONDecodeError, KeyError):
             return None
 
 
 # ── Singleton ─────────────────────────────────────────────────────────────
-# Istanza condivisa importabile direttamente:
+# Shared instance, importable directly:
 #     from state import state
 state = SimulationState()
 
 
-# ── Funzioni helper ───────────────────────────────────────────────────────
+# ── Helper functions ──────────────────────────────────────────────────────
 
 def reset_state() -> None:
     """
-    Reimposta lo stato globale ai valori iniziali.
+    Resets the global state to its initial values.
 
-    Muta l'istanza esistente invece di ricrearla, in modo che tutti i moduli
-    che hanno già importato `state` con `from state import state` continuino
-    a puntare all'oggetto corretto dopo il reset.
+    Mutates the existing instance instead of recreating it, so that all modules
+    that already imported `state` with `from state import state` continue
+    to point to the correct object after the reset.
 
-    Utile per il restart della simulazione tramite l'endpoint /manager/reset.
+    Useful for restarting the simulation via the /manager/reset endpoint.
     """
     state.current_tick = 0
     state.assets.clear()
@@ -179,14 +179,14 @@ def reset_state() -> None:
 
 def _serialize(obj: Any) -> Any:
     """
-    Converte ricorsivamente un oggetto in un tipo serializzabile JSON.
+    Recursively converts an object to a JSON-serializable type.
 
-    Strategia:
-    - Oggetti con metodo `to_dict()` → chiama to_dict() (convenzione dei moduli domain)
-    - dict → ricorre sui valori
-    - list → ricorre sugli elementi
-    - Primitivi (int, float, str, bool, None) → passati as-is
-    - Tutto il resto → convertito a stringa come fallback
+    Strategy:
+    - Objects with a `to_dict()` method → calls to_dict() (domain module convention)
+    - dict → recurses over values
+    - list → recurses over elements
+    - Primitives (int, float, str, bool, None) → passed as-is
+    - Everything else → converted to string as fallback
     """
     if hasattr(obj, "to_dict"):
         return obj.to_dict()
@@ -196,18 +196,18 @@ def _serialize(obj: Any) -> Any:
         return [_serialize(item) for item in obj]
     if isinstance(obj, (int, float, str, bool)) or obj is None:
         return obj
-    # Fallback: enum, dataclass senza to_dict, ecc.
+    # Fallback: enum, dataclass without to_dict, etc.
     return str(obj)
 
 
 def get_state_snapshot() -> dict:
     """
-    Wrapper module-level per state.get_state_snapshot().
+    Module-level wrapper for state.get_state_snapshot().
 
-    Mantenuto per compatibilità con i moduli che importano questa funzione
-    direttamente (es. orchestrator.py).
+    Kept for compatibility with modules that import this function
+    directly (e.g. orchestrator.py).
 
     Returns:
-        dict con tutti i campi di SimulationState in formato JSON-compatibile.
+        dict with all SimulationState fields in JSON-compatible format.
     """
     return state.get_state_snapshot()

@@ -1,9 +1,9 @@
 """
 schemas.py
 ----------
-Modelli Pydantic per tutti i body di input delle API REST.
+Pydantic models for all REST API input bodies.
 
-Importato da tutti i router. Non contiene logica di dominio.
+Imported by all routers. Contains no domain logic.
 """
 
 from typing import Literal, Optional
@@ -11,37 +11,37 @@ from pydantic import BaseModel, Field
 
 
 class TickRequest(BaseModel):
-    """Body per POST /market/tick."""
-    n_ticks: int = Field(default=1, ge=1, description="Numero di tick da avanzare.")
+    """Request body for POST /market/tick."""
+    n_ticks: int = Field(default=1, ge=1, description="Number of ticks to advance.")
 
 
 class TradeRequest(BaseModel):
-    """Body per POST /retail/traders/{id}/trade."""
+    """Request body for POST /retail/traders/{id}/trade."""
     asset_id: str
     action: Literal["BUY", "SELL"]
     quantity: float = Field(gt=0)
 
 
 class CreateRetailRequest(BaseModel):
-    """Body per POST /retail/traders."""
+    """Request body for POST /retail/traders."""
     name: str
     initial_balance: float = Field(default=10000.0, gt=0)
     is_real_user: bool = False
 
 
 class CopyRequest(BaseModel):
-    """Body per POST /retail/traders/{id}/copy."""
+    """Request body for POST /retail/traders/{id}/copy."""
     professional_id: str
     allocation_pct: float = Field(default=0.5, gt=0.0, le=1.0)
 
 
 class PhaseChangeRequest(BaseModel):
-    """Body per PATCH /professional/traders/{id}/phase."""
+    """Request body for PATCH /professional/traders/{id}/phase."""
     new_phase: Literal["REPUTATION_BUILD", "FOLLOWER_GROWTH", "MONETIZATION"]
 
 
 class UpdateStrategyRequest(BaseModel):
-    """Body per PATCH /professional/traders/{id}/strategy. Tutti i campi opzionali."""
+    """Request body for PATCH /professional/traders/{id}/strategy. All fields optional."""
     expected_value: Optional[float] = None
     risk_level: Optional[float] = Field(default=None, ge=0.0, le=1.0)
     trade_frequency: Optional[float] = Field(default=None, ge=0.0, le=1.0)
@@ -52,7 +52,7 @@ class UpdateStrategyRequest(BaseModel):
 
 
 class ScenarioRequest(BaseModel):
-    """Body per POST /algorithm/simulate-scenario."""
+    """Request body for POST /algorithm/simulate-scenario."""
     trader_id: str
     scenario: Literal["TRANSITION_TO_MONETIZATION", "MAINTAIN_CURRENT_PHASE"]
     n_ticks: int = Field(default=10, ge=1)

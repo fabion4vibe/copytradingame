@@ -1,21 +1,21 @@
 """
 copy_engine.py
 --------------
-Implementa il motore di copy trading: propaga le operazioni del trader
-professionista a tutti i retail follower attivi.
+Implements the copy trading engine: propagates the professional trader's operations
+to all active retail followers.
 
-Questo è il modulo in cui le perdite della fase C si trasferiscono ai follower
-e il profitto della piattaforma viene aggiornato.
+This is the module where phase C losses are transferred to followers
+and the platform profit is updated.
 
-NOTA DIDATTICA — Meccanismo centrale del conflitto di interessi:
-    La piattaforma guadagna dalle perdite nette dei retail.
-    Quando un professionista è in fase C (EV negativo), le sue operazioni
-    vengono replicate ai follower tramite propagate_trade(). Ogni perdita
-    netta subita da un retail si traduce in un guadagno per la piattaforma,
-    registrato in state.platform_pnl. Il professionista riceve un bonus
-    separato (vedi professional.py). La piattaforma guadagna su entrambi i fronti.
+DIDACTIC NOTE — Central conflict-of-interest mechanism:
+    The platform profits from the net losses of retail traders.
+    When a professional is in phase C (negative EV), their operations are
+    replicated to followers via propagate_trade(). Each net loss suffered by
+    a retail trader translates into a platform gain recorded in state.platform_pnl.
+    The professional receives a separate bonus (see professional.py).
+    The platform profits on both fronts.
 
-Uso tipico:
+Typical usage:
     from traders.copy_engine import copy_engine, CopyRelation
     relation = copy_engine.start_copy(retail_id, professional_id, allocation_pct=0.4)
     copy_trades = copy_engine.propagate_trade(professional_trade)
@@ -32,19 +32,19 @@ from traders.professional import professional_engine
 logger = logging.getLogger(__name__)
 
 
-# ── Dataclass CopyRelation ─────────────────────────────────────────────────
+# ── CopyRelation dataclass ─────────────────────────────────────────────────
 
 @dataclass
 class CopyRelation:
     """
-    Rappresenta una relazione di copy trading tra un retail e un professionista.
+    Represents a copy trading relationship between a retail and a professional trader.
 
-    Campi:
-        retail_id:       id del RetailTrader follower
-        professional_id: id del ProfessionalTrader copiato
-        allocation_pct:  frazione del portafoglio retail allocata al copy (0.0–1.0]
-        start_tick:      tick in cui la relazione è stata attivata
-        active:          False se la relazione è stata disattivata con stop_copy()
+    Fields:
+        retail_id:       id of the follower RetailTrader
+        professional_id: id of the copied ProfessionalTrader
+        allocation_pct:  fraction of the retail portfolio allocated to copy (0.0–1.0]
+        start_tick:      tick at which the relationship was activated
+        active:          False if the relationship was deactivated with stop_copy()
     """
 
     retail_id: str
@@ -54,7 +54,7 @@ class CopyRelation:
     active: bool = True
 
     def to_dict(self) -> dict:
-        """Serializza la relazione di copy trading in un dizionario JSON-compatibile."""
+        """Serializes the copy trading relationship to a JSON-compatible dictionary."""
         return {
             "retail_id": self.retail_id,
             "professional_id": self.professional_id,
@@ -65,7 +65,7 @@ class CopyRelation:
 
     @classmethod
     def from_dict(cls, data: dict) -> "CopyRelation":
-        """Ricostruisce una CopyRelation da un dizionario snapshot."""
+        """Reconstructs a CopyRelation from a snapshot dictionary."""
         return cls(
             retail_id=data["retail_id"],
             professional_id=data["professional_id"],
@@ -79,10 +79,10 @@ class CopyRelation:
 
 class CopyEngine:
     """
-    Gestisce le relazioni di copy trading e la propagazione dei trade.
+    Manages copy trading relationships and trade propagation.
 
-    È l'unico modulo autorizzato ad aggiornare state.platform_pnl con le
-    perdite nette dei retail follower.
+    It is the only module authorised to update state.platform_pnl with
+    the net losses of retail followers.
     """
 
     def start_copy(
@@ -92,30 +92,30 @@ class CopyEngine:
         allocation_pct: float = 0.5,
     ) -> CopyRelation:
         """
-        Avvia una relazione di copy trading tra un retail e un professionista.
+        Starts a copy trading relationship between a retail and a professional trader.
 
-        Validazioni:
-        - Il retail esiste in state.retail_traders
-        - Il professional esiste in state.professional_traders
-        - Non esiste già una CopyRelation attiva tra questi due
-        - allocation_pct è in range (0.0, 1.0]
+        Validations:
+        - The retail trader exists in state.retail_traders
+        - The professional exists in state.professional_traders
+        - No active CopyRelation already exists between these two
+        - allocation_pct is in range (0.0, 1.0]
 
-        Azioni:
-        - Crea CopyRelation e la aggiunge a state.copy_relations
-        - Aggiunge professional_id a retail.copied_traders
-        - Aggiunge retail_id a professional.followers
-        - Aggiorna follower_capital_exposed del professionista
+        Actions:
+        - Creates CopyRelation and appends it to state.copy_relations
+        - Adds professional_id to retail.copied_traders
+        - Adds retail_id to professional.followers
+        - Updates the professional's follower_capital_exposed
 
         Args:
-            retail_id:       id del RetailTrader che vuole copiare.
-            professional_id: id del ProfessionalTrader da copiare.
-            allocation_pct:  frazione del balance retail da allocare (default 0.5).
+            retail_id:       id of the RetailTrader who wants to copy.
+            professional_id: id of the ProfessionalTrader to copy.
+            allocation_pct:  fraction of retail balance to allocate (default 0.5).
 
         Returns:
-            La CopyRelation appena creata.
+            The newly created CopyRelation.
 
         Raises:
-            ValueError: se una validazione fallisce, con messaggio descrittivo.
+            ValueError: if any validation fails, with a descriptive message.
         """
         if retail_id not in state.retail_traders:
             raise ValueError(f"Retail trader '{retail_id}' non trovato.")
@@ -157,20 +157,20 @@ class CopyEngine:
 
     def stop_copy(self, retail_id: str, professional_id: str) -> None:
         """
-        Disattiva la relazione di copy trading tra un retail e un professionista.
+        Deactivates the copy trading relationship between a retail and a professional.
 
-        Azioni:
-        - Imposta CopyRelation.active = False
-        - Rimuove professional_id da retail.copied_traders
-        - Rimuove retail_id da professional.followers
-        - Aggiorna follower_capital_exposed del professionista
+        Actions:
+        - Sets CopyRelation.active = False
+        - Removes professional_id from retail.copied_traders
+        - Removes retail_id from professional.followers
+        - Updates the professional's follower_capital_exposed
 
         Args:
-            retail_id:       id del RetailTrader.
-            professional_id: id del ProfessionalTrader.
+            retail_id:       RetailTrader id.
+            professional_id: ProfessionalTrader id.
 
         Raises:
-            ValueError: se non esiste una relazione attiva tra i due.
+            ValueError: if no active relationship exists between the two.
         """
         found = False
         for rel in state.copy_relations:
@@ -198,27 +198,27 @@ class CopyEngine:
 
     def propagate_trade(self, professional_trade: Trade) -> List[Trade]:
         """
-        Replica il trade del professionista a tutti i retail follower attivi.
+        Replicates the professional's trade to all active retail followers.
 
-        Per ogni CopyRelation attiva con professional_id == trade.trader_id:
+        For each active CopyRelation with professional_id == trade.trader_id:
 
             BUY:  qty_to_copy = (retail.balance * allocation_pct) / current_price
             SELL: qty_to_copy = retail.portfolio.get(asset_id, 0) * allocation_pct
 
-        Se qty <= 0 o il trade fallisce per balance/portfolio insufficienti,
-        il trade viene saltato silenziosamente.
+        If qty <= 0 or the trade fails due to insufficient balance/portfolio,
+        the trade is silently skipped.
 
-        Aggiornamento state.platform_pnl (meccanismo didattico centrale):
-            Dopo ogni trade copiato, il delta PnL del retail viene calcolato.
-            Se negativo (il retail ha perso), la piattaforma registra il guadagno:
+        state.platform_pnl update (central didactic mechanism):
+            After each copied trade, the retail's PnL delta is computed.
+            If negative (the retail lost), the platform records the gain:
                 state.platform_pnl += abs(delta_pnl)
-            La piattaforma non registra guadagni quando il retail guadagna.
+            The platform does not record gains when the retail profits.
 
         Args:
-            professional_trade: il Trade eseguito dal professionista da replicare.
+            professional_trade: the Trade executed by the professional to replicate.
 
         Returns:
-            Lista dei Trade eseguiti sui retail follower.
+            List of Trades executed on retail followers.
         """
         professional_id = professional_trade.trader_id
         asset_id = professional_trade.asset_id
@@ -247,13 +247,13 @@ class CopyEngine:
 
             if qty <= 1e-9:
                 logger.info(
-                    "INFO: trade copiato saltato per quantità zero — "
+                    "INFO: copied trade skipped — zero quantity — "
                     "retail=%s, asset=%s, action=%s",
                     retail_id, asset_id, action,
                 )
                 continue
 
-            # Snapshot del valore portafoglio prima del trade
+            # Portfolio value snapshot before the trade
             pv_before = retail_engine.get_portfolio_value(retail_id)
 
             try:
@@ -267,20 +267,20 @@ class CopyEngine:
                 )
                 copy_trades.append(trade)
             except ValueError:
-                # Balance o portafoglio insufficiente: salta silenziosamente
+                # Insufficient balance or portfolio: skip silently
                 logger.info(
-                    "INFO: trade copiato saltato per balance insufficiente — "
+                    "INFO: copied trade skipped — insufficient balance — "
                     "retail=%s, asset=%s, action=%s, qty=%.4f",
                     retail_id, asset_id, action, qty,
                 )
                 continue
 
-            # Aggiornamento platform_pnl — la piattaforma guadagna dalle perdite retail
-            # NOTA DIDATTICA: questo è il meccanismo del conflitto di interessi.
-            # Ogni volta che un follower perde, la piattaforma registra un guadagno
-            # equivalente. In fase C, il professionista genera intenzionalmente
-            # perdite per i follower, e la piattaforma incassa su entrambi i fronti:
-            # dalle perdite retail (qui) e dal bonus al professionista (in professional.py).
+            # platform_pnl update — the platform profits from retail losses
+            # DIDACTIC NOTE: this is the conflict-of-interest mechanism.
+            # Every time a follower loses, the platform records an equivalent gain.
+            # In phase C, the professional intentionally generates losses for followers,
+            # and the platform collects on both fronts:
+            # from retail losses (here) and from the professional's bonus (in professional.py).
             pv_after = retail_engine.get_portfolio_value(retail_id)
             delta_pnl = pv_after - pv_before
             if delta_pnl < 0:
@@ -292,14 +292,14 @@ class CopyEngine:
         self, professional_id: Optional[str] = None
     ) -> List[CopyRelation]:
         """
-        Restituisce le CopyRelation attive, opzionalmente filtrate per professionista.
+        Returns active CopyRelations, optionally filtered by professional.
 
         Args:
-            professional_id: se specificato, filtra per quel professionista.
-                             Se None, restituisce tutte le relazioni attive.
+            professional_id: if specified, filters for that professional.
+                             If None, returns all active relationships.
 
         Returns:
-            Lista di CopyRelation attive.
+            List of active CopyRelations.
         """
         return [
             rel for rel in state.copy_relations
@@ -310,13 +310,13 @@ class CopyEngine:
 
     def get_copy_stats(self) -> dict:
         """
-        Restituisce statistiche aggregate del copy trading.
+        Returns aggregate copy trading statistics.
 
         Returns:
-            dict con:
-            - total_active_relations: numero totale di relazioni attive
-            - total_capital_in_copy:  capitale retail totale impegnato in copy
-            - by_professional:        per ogni professionista con follower attivi:
+            dict with:
+            - total_active_relations: total number of active relationships
+            - total_capital_in_copy:  total retail capital committed to copy
+            - by_professional:        for each professional with active followers:
                                       followers, capital_exposed, phase
         """
         active = self.get_active_relations()
@@ -341,7 +341,7 @@ class CopyEngine:
             by_professional[rel.professional_id]["followers"] += 1
             by_professional[rel.professional_id]["capital_exposed"] += capital
 
-        # Arrotonda capital_exposed per leggibilità
+        # Round capital_exposed for readability
         for stats in by_professional.values():
             stats["capital_exposed"] = round(stats["capital_exposed"], 2)
 
@@ -352,6 +352,6 @@ class CopyEngine:
         }
 
 
-# ── Istanza globale ────────────────────────────────────────────────────────
-# Importabile direttamente: from traders.copy_engine import copy_engine
+# ── Global instance ────────────────────────────────────────────────────────
+# Importable directly: from traders.copy_engine import copy_engine
 copy_engine = CopyEngine()

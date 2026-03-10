@@ -1,21 +1,21 @@
 """
 orchestrator.py
 ---------------
-Coordina l'avanzamento della simulazione tick per tick.
+Coordinates the simulation tick-by-tick advancement.
 
-Ogni tick completo esegue in ordine:
-  1. market.step(1)                         → aggiorna prezzi
-  2. Per ogni professionista:
-       execute_strategy()                    → genera trade
-       Se trade eseguito → propagate_trade() → propaga ai follower
-  3. Per ogni professionista:
-       update_follower_capital()             → ricalcola esposizione retail
-  4. Snapshot JSON opzionale (SAVE_SNAPSHOTS=true)
+Each full tick executes in order:
+  1. market.step(1)                         → updates prices
+  2. For each professional:
+       execute_strategy()                    → generates trade
+       If trade executed → propagate_trade() → propagates to followers
+  3. For each professional:
+       update_follower_capital()             → recalculates retail exposure
+  4. Optional JSON snapshot (SAVE_SNAPSHOTS=true)
 
-Supporta sia tick manuali (via API) sia un loop automatico in background.
-Il lock garantisce che auto-tick e tick manuali non si sovrappongano.
+Supports both manual ticks (via API) and an automatic background loop.
+The lock ensures that auto-tick and manual ticks do not overlap.
 
-Uso tipico:
+Typical usage:
     from orchestrator import orchestrator
     summary = orchestrator.run_tick()
     orchestrator.start_auto_tick(interval_seconds=2.0)
@@ -40,16 +40,16 @@ logger = logging.getLogger(__name__)
 
 class TickOrchestrator:
     """
-    Coordina l'esecuzione di un tick completo della simulazione.
+    Coordinates the execution of a complete simulation tick.
 
-    Garantisce l'ordine di esecuzione corretto tra i moduli e previene
-    race condition tra tick manuali e il loop automatico tramite un Lock.
+    Guarantees the correct execution order between modules and prevents
+    race conditions between manual ticks and the automatic loop via a Lock.
 
-    Attributi interni:
-        _tick_log:    deque con gli ultimi 1000 tick summary
-        _lock:        threading.Lock condiviso tra tick manuali e auto-tick
-        _auto_thread: Thread del loop automatico (None se non attivo)
-        _stop_event:  Event per segnalare l'arresto del loop automatico
+    Internal attributes:
+        _tick_log:    deque holding the last 1000 tick summaries
+        _lock:        threading.Lock shared between manual ticks and auto-tick
+        _auto_thread: Thread for the automatic loop (None if not running)
+        _stop_event:  Event used to signal the automatic loop to stop
     """
 
     def __init__(self) -> None:
@@ -60,29 +60,29 @@ class TickOrchestrator:
 
     def run_tick(self) -> dict:
         """
-        Esegue un singolo tick completo seguendo l'ordine definito.
+        Executes a single complete tick following the defined order.
 
-        Passi:
-        1. Avanza i prezzi di mercato (market_simulator.step)
-        2. Ogni professionista esegue la propria strategia
-        3. I trade dei professionisti vengono propagati ai follower
-        4. Il capitale esposto di ogni professionista viene ricalcolato
-        5. (Opzionale) Salva snapshot JSON se SAVE_SNAPSHOTS=true
+        Steps:
+        1. Advances market prices (market_simulator.step)
+        2. Each professional executes their own strategy
+        3. Professional trades are propagated to followers
+        4. The exposed capital of each professional is recalculated
+        5. (Optional) Saves JSON snapshot if SAVE_SNAPSHOTS=true
 
-        Thread-safe: acquisisce il lock prima di eseguire qualsiasi step.
+        Thread-safe: acquires the lock before executing any step.
 
         Returns:
-            dict con tick, prices, trades_executed, platform_pnl_delta,
+            dict with tick, prices, trades_executed, platform_pnl_delta,
             professionals_summary.
         """
         with self._lock:
             pnl_before = state.platform_pnl
             trades_executed = 0
 
-            # Step 1: avanza i prezzi di mercato
+            # Step 1: advance market prices
             market_simulator.step(1)
 
-            # Step 2 + 3: ogni professionista esegue strategia e propaga ai follower
+            # Step 2 + 3: each professional executes strategy and propagates to followers
             professionals_summary = []
             for trader_id in list(state.professional_traders.keys()):
                 trade = professional_engine.execute_strategy(trader_id)
@@ -99,7 +99,7 @@ class TickOrchestrator:
                     "trade_executed": trade_done,
                 })
 
-            # Step 4: ricalcola il capitale follower esposto per ogni professionista
+            # Step 4: recalculate exposed follower capital for each professional
             for trader_id in state.professional_traders:
                 professional_engine.update_follower_capital(trader_id)
 
@@ -116,13 +116,13 @@ class TickOrchestrator:
 
             self._tick_log.append(summary)
 
-            # Step 5: snapshot opzionale (file locale)
+            # Step 5: optional snapshot (local file)
             if os.environ.get("SAVE_SNAPSHOTS", "").lower() == "true":
                 self._save_snapshot()
 
-            # Salvataggio remoto ogni 100 tick.
-            # In locale JSONBIN_KEY non è configurato, save_to_remote() non fa nulla.
-            # In produzione salva lo snapshot su JSONBin per sopravvivere ai riavvii di Render.
+            # Remote save every 100 ticks.
+            # Locally JSONBIN_KEY is not configured, save_to_remote() is a no-op.
+            # In production saves the snapshot to JSONBin to survive Render restarts.
             if state.current_tick % 100 == 0:
                 state.save_to_remote()
 
@@ -130,50 +130,50 @@ class TickOrchestrator:
 
     def run_n_ticks(self, n: int) -> List[dict]:
         """
-        Esegue N tick consecutivi.
+        Executes N consecutive ticks.
 
         Args:
-            n: numero di tick da eseguire (>= 1).
+            n: number of ticks to execute (>= 1).
 
         Returns:
-            Lista di tick summary, uno per tick.
+            List of tick summaries, one per tick.
         """
         return [self.run_tick() for _ in range(n)]
 
     def start_auto_tick(self, interval_seconds: float = 2.0) -> None:
         """
-        Avvia un loop in background che esegue run_tick() ogni interval_seconds.
+        Starts a background loop that executes run_tick() every interval_seconds.
 
-        Se il loop è già in esecuzione non ne avvia un secondo.
-        Il thread è daemon: si chiude automaticamente all'uscita del processo.
+        If the loop is already running, a second one is not started.
+        The thread is a daemon: it closes automatically when the process exits.
 
         Args:
-            interval_seconds: intervallo tra tick automatici (default 2.0 s).
+            interval_seconds: interval between automatic ticks (default 2.0 s).
         """
         if self._auto_thread is not None and self._auto_thread.is_alive():
-            logger.info("Auto-tick già in esecuzione — ignorato.")
+            logger.info("Auto-tick already running — ignored.")
             return
 
         self._stop_event.clear()
 
         def _loop() -> None:
-            logger.info("Auto-tick avviato (intervallo %.1f s).", interval_seconds)
+            logger.info("Auto-tick started (interval %.1f s).", interval_seconds)
             while not self._stop_event.is_set():
                 try:
                     self.run_tick()
                 except Exception as exc:
-                    logger.error("Errore durante auto-tick: %s", exc)
+                    logger.error("Error during auto-tick: %s", exc)
                 self._stop_event.wait(timeout=interval_seconds)
-            logger.info("Auto-tick fermato.")
+            logger.info("Auto-tick stopped.")
 
         self._auto_thread = threading.Thread(target=_loop, daemon=True, name="auto-tick")
         self._auto_thread.start()
 
     def stop_auto_tick(self) -> None:
         """
-        Ferma il loop automatico.
+        Stops the automatic loop.
 
-        Segnala l'evento di stop e attende la terminazione del thread (max 5 s).
+        Signals the stop event and waits for the thread to terminate (max 5 s).
         """
         self._stop_event.set()
         if self._auto_thread is not None:
@@ -182,10 +182,10 @@ class TickOrchestrator:
 
     def is_auto_running(self) -> bool:
         """
-        Restituisce True se il loop automatico è attivo.
+        Returns True if the automatic loop is active.
 
         Returns:
-            bool: True se il thread è vivo e il segnale di stop non è stato inviato.
+            bool: True if the thread is alive and the stop signal has not been sent.
         """
         return (
             self._auto_thread is not None
@@ -195,26 +195,26 @@ class TickOrchestrator:
 
     def get_tick_log(self, last_n: int = 10) -> List[dict]:
         """
-        Restituisce i summary degli ultimi N tick eseguiti.
+        Returns summaries of the last N executed ticks.
 
-        Il log è mantenuto in memoria come deque con maxlen=1000: i tick
-        più vecchi vengono scartati automaticamente quando il limite è raggiunto.
+        The log is kept in memory as a deque with maxlen=1000: older ticks
+        are automatically discarded when the limit is reached.
 
         Args:
-            last_n: numero di tick più recenti da restituire (default 10).
+            last_n: number of most recent ticks to return (default 10).
 
         Returns:
-            Lista di tick summary ordinata dal più vecchio al più recente.
+            List of tick summaries ordered from oldest to most recent.
         """
         log_list = list(self._tick_log)
         return log_list[-last_n:] if last_n < len(log_list) else log_list
 
     def _save_snapshot(self) -> None:
         """
-        Salva lo stato corrente in data/snapshot_{tick}.json.
+        Saves the current state to data/snapshot_{tick}.json.
 
-        Chiamato internamente da run_tick() se SAVE_SNAPSHOTS=true.
-        La directory data/ viene creata se non esiste.
+        Called internally by run_tick() if SAVE_SNAPSHOTS=true.
+        The data/ directory is created if it does not exist.
         """
         try:
             data_dir = Path("data")
@@ -223,9 +223,9 @@ class TickOrchestrator:
             with open(snapshot_path, "w", encoding="utf-8") as f:
                 json.dump(get_state_snapshot(), f, indent=2, default=str)
         except Exception as exc:
-            logger.error("Errore durante il salvataggio dello snapshot: %s", exc)
+            logger.error("Error saving snapshot: %s", exc)
 
 
-# ── Istanza globale ────────────────────────────────────────────────────────
-# Importabile direttamente: from orchestrator import orchestrator
+# ── Global instance ────────────────────────────────────────────────────────
+# Importable directly: from orchestrator import orchestrator
 orchestrator = TickOrchestrator()

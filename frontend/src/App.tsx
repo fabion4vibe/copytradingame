@@ -7,12 +7,12 @@ import { ConflictOfInterestBanner } from './didactic/components/ConflictOfIntere
 import type { AppRole } from './types';
 
 /**
- * Root dell'applicazione.
+ * Application root.
  *
- * Gestisce:
- * - Il ruolo attivo ('retail' | 'manager') per il routing tra le viste
- * - Il tick corrente, passato come prop alle viste per triggerare il re-fetch
- *   senza rimontare l'intero componente (preserva lo stato locale, es. PnL history)
+ * Manages:
+ * - The active role ('retail' | 'manager') for routing between views
+ * - The current tick, passed as a prop to views to trigger re-fetching
+ *   without remounting the entire component (preserves local state, e.g. PnL history)
  */
 export default function App() {
   const [role, setRole] = useState<AppRole>('retail');
@@ -20,7 +20,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-gray-950 text-white">
-      {/* Header fisso */}
+      {/* Fixed header */}
       <header className="sticky top-0 z-50 bg-gray-900 border-b border-gray-800 px-6 py-3">
         <div className="max-w-screen-xl mx-auto flex items-center justify-between gap-4">
           {/* Brand */}
@@ -33,7 +33,7 @@ export default function App() {
             </span>
           </div>
 
-          {/* Controlli centrali */}
+          {/* Central controls */}
           <TickController currentTick={tick} onTickAdvanced={setTick} />
 
           {/* Role switcher */}

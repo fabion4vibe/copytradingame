@@ -1,14 +1,14 @@
 """
 recommender.py
 --------------
-Genera raccomandazioni strategiche per il gestore della piattaforma.
+Generates strategic recommendations for the platform manager.
 
-Il motore non agisce autonomamente: analizza lo stato corrente e produce
-suggerimenti che il gestore può accettare o ignorare dalla dashboard.
+The engine does not act autonomously: it analyses the current state and produces
+suggestions that the manager can accept or ignore from the dashboard.
 
-Tutti i valori "expected_*" sono stime statistiche, non previsioni deterministiche.
+All "expected_*" values are statistical estimates, not deterministic forecasts.
 
-Uso tipico:
+Typical usage:
     from algorithm.recommender import strategy_recommender
     recs  = strategy_recommender.get_recommendations()
     sim   = strategy_recommender.simulate_scenario(trader_id, "TRANSITION_TO_MONETIZATION")
@@ -27,40 +27,40 @@ from algorithm.scorer import trader_scorer
 
 class StrategyRecommender:
     """
-    Analizza lo stato della simulazione e produce raccomandazioni per il gestore.
+    Analyses the simulation state and produces recommendations for the platform manager.
 
-    Le raccomandazioni sono ordinate per score decrescente (priorità alta prima).
-    Le stime di guadagno piattaforma sono approssimazioni basate su EV atteso
-    e frequenza di trade: non tengono conto della varianza del mercato.
+    Recommendations are sorted by descending score (highest priority first).
+    Platform gain estimates are approximations based on expected EV and trade frequency:
+    they do not account for market variance.
     """
 
     def get_recommendations(
         self, weights: Optional[Dict[str, float]] = None
     ) -> List[dict]:
         """
-        Analizza tutti i trader e produce una lista di raccomandazioni ordinate.
+        Analyses all traders and produces a sorted list of recommendations.
 
-        La suggested_action è determinata da:
-        - Condizioni di transizione soddisfatte → suggerisci transizione
-        - Trader in fase A/B con score alto ma senza follower sufficienti → AWAIT
-        - Trader in fase C → suggerisci MAINTAIN o REDUCE_RISK se score scende
-        - Trader in A con frequenza bassa → INCREASE_TRADE_FREQUENCY
+        suggested_action is determined by:
+        - Transition conditions met → suggest transition
+        - Trader in phase A/B with high score but insufficient followers → AWAIT
+        - Trader in phase C → suggest MAINTAIN or REDUCE_RISK if score drops
+        - Trader in A with low frequency → INCREASE_TRADE_FREQUENCY
 
-        NOTA: expected_platform_gain è una stima statistica (EV * capital * freq),
-        non un dato osservato. Usare solo come indicazione di priorità.
+        NOTE: expected_platform_gain is a statistical estimate (EV * capital * freq),
+        not an observed value. Use only as a priority indicator.
 
         Args:
-            weights: pesi opzionali per il calcolo degli score.
+            weights: optional weights for score calculation.
 
         Returns:
-            Lista di raccomandazioni ordinate per score decrescente. Ogni entry:
+            List of recommendations sorted by descending score. Each entry:
             - trader_id, trader_name, current_phase
-            - suggested_action: stringa che identifica l'azione suggerita
-            - reason:           spiegazione leggibile in italiano
-            - expected_platform_gain: stima guadagno piattaforma (se applicabile)
+            - suggested_action: string identifying the suggested action
+            - reason:           human-readable explanation (in Italian for UI display)
+            - expected_platform_gain: estimated platform gain (if applicable)
             - risk_level:       "LOW" | "MEDIUM" | "HIGH"
             - confidence:       0.0–1.0
-            - score:            score di priorità calcolato dal TraderScorer
+            - score:            priority score computed by TraderScorer
         """
         ranking = trader_scorer.rank_all_traders(weights)
         recommendations = []
@@ -96,23 +96,23 @@ class StrategyRecommender:
         score: float,
     ):
         """
-        Determina l'azione raccomandata per un singolo trader.
+        Determines the recommended action for a single trader.
 
-        Restituisce una tupla (action, reason, risk_level, confidence, expected_gain).
+        Returns a tuple (action, reason, risk_level, confidence, expected_gain).
 
         Args:
-            trader:     istanza ProfessionalTrader.
-            conditions: output di check_transition_conditions().
-            score:      score calcolato dal TraderScorer.
+            trader:     ProfessionalTrader instance.
+            conditions: output of check_transition_conditions().
+            score:      score computed by TraderScorer.
 
         Returns:
-            Tupla (action: str, reason: str, risk: str, confidence: float, gain: float).
+            Tuple (action: str, reason: str, risk: str, confidence: float, gain: float).
         """
         phase = trader.phase
         n_followers = len(trader.followers)
         capital = trader.follower_capital_exposed
 
-        # Stima guadagno piattaforma se si transiziona a C
+        # Estimate platform gain if the trader transitions to phase C
         estimated_gain_if_C = self._estimate_monetization_gain(
             capital, DEFAULT_STRATEGY_C, n_ticks=10
         )
@@ -194,19 +194,19 @@ class StrategyRecommender:
         self, capital: float, strategy, n_ticks: int
     ) -> float:
         """
-        Stima il guadagno netto della piattaforma se un trader transiziona a C.
+        Estimates the platform's net gain if a trader transitions to phase C.
 
         Formula:
             expected_retail_loss = capital * |EV_C| * trade_frequency * n_ticks
             expected_platform_net = expected_retail_loss - (bonus_per_tick * n_ticks)
 
         Args:
-            capital:   capitale follower esposto corrente.
-            strategy:  StrategyProfile della fase C (DEFAULT_STRATEGY_C).
-            n_ticks:   orizzonte temporale della stima.
+            capital:   current exposed follower capital.
+            strategy:  StrategyProfile for phase C (DEFAULT_STRATEGY_C).
+            n_ticks:   time horizon of the estimate.
 
         Returns:
-            float: guadagno netto atteso della piattaforma (può essere negativo).
+            float: expected net platform gain (may be negative).
         """
         expected_retail_loss = capital * abs(strategy.expected_value) * strategy.trade_frequency * n_ticks
         bonus_cost = strategy.bonus_per_tick_in_C * n_ticks
@@ -216,37 +216,37 @@ class StrategyRecommender:
         self, trader_id: str, scenario: str, n_ticks: int = 10
     ) -> dict:
         """
-        Stima l'effetto di uno scenario su N tick futuri (modello statistico, non deterministico).
+        Estimates the effect of a scenario over N future ticks (statistical model, not deterministic).
 
-        Scenari supportati:
-        - "TRANSITION_TO_MONETIZATION": usa i parametri della fase C (DEFAULT_STRATEGY_C)
-          per stimare perdita retail attesa e guadagno netto piattaforma.
-        - "MAINTAIN_CURRENT_PHASE": usa la strategia attuale del trader.
+        Supported scenarios:
+        - "TRANSITION_TO_MONETIZATION": uses phase C parameters (DEFAULT_STRATEGY_C)
+          to estimate expected retail loss and net platform gain.
+        - "MAINTAIN_CURRENT_PHASE": uses the trader's current strategy.
 
-        Formula condivisa:
+        Shared formula:
             expected_retail_loss = follower_capital * |EV| * trade_frequency * n_ticks
             expected_bonus_paid  = bonus_per_tick_in_C * n_ticks
             expected_platform_net = expected_retail_loss - expected_bonus_paid
 
-        La confidence_interval è ±1σ calcolata assumendo varianza proporzionale
-        all'EV e alla radice del numero di tick (approssimazione CLT).
+        confidence_interval is ±1σ computed assuming variance proportional
+        to EV and the square root of the number of ticks (CLT approximation).
 
-        NOTA: i valori "expected_*" sono stime statistiche basate su EV atteso.
-        Non tengono conto della varianza del mercato né del comportamento effettivo
-        dei trader. Usare solo come supporto decisionale indicativo.
+        NOTE: "expected_*" values are statistical estimates based on expected EV.
+        They do not account for market variance or actual trader behaviour.
+        Use only as indicative decision support.
 
         Args:
-            trader_id: id del ProfessionalTrader.
-            scenario:  "TRANSITION_TO_MONETIZATION" o "MAINTAIN_CURRENT_PHASE".
-            n_ticks:   orizzonte temporale (default 10).
+            trader_id: ProfessionalTrader id.
+            scenario:  "TRANSITION_TO_MONETIZATION" or "MAINTAIN_CURRENT_PHASE".
+            n_ticks:   time horizon (default 10).
 
         Returns:
-            dict con scenario, trader_id, n_ticks, expected_retail_loss,
+            dict with scenario, trader_id, n_ticks, expected_retail_loss,
             expected_bonus_paid, expected_platform_net_gain, confidence_interval.
 
         Raises:
-            KeyError:   se trader_id non esiste.
-            ValueError: se scenario non è supportato.
+            KeyError:   if trader_id does not exist.
+            ValueError: if scenario is not supported.
         """
         trader = state.professional_traders[trader_id]
         capital = trader.follower_capital_exposed
@@ -269,7 +269,7 @@ class StrategyRecommender:
         expected_bonus_paid  = bonus_per_tick * n_ticks
         expected_platform_net = expected_retail_loss - expected_bonus_paid
 
-        # ±1σ: approssimazione basata su varianza del processo (CLT)
+        # ±1σ: approximation based on process variance (CLT)
         # σ_per_tick ≈ capital * risk_level * sqrt(freq)
         sigma_per_tick = capital * strategy.risk_level * math.sqrt(freq)
         sigma_total    = sigma_per_tick * math.sqrt(n_ticks)
@@ -289,21 +289,21 @@ class StrategyRecommender:
 
     def get_platform_health_report(self) -> dict:
         """
-        Panoramica sintetica dello stato economico della piattaforma.
+        Concise overview of the platform's economic state.
 
-        Calcola:
+        Computes:
         - platform_net: pnl + commissions - bonus_paid
-        - total_retail_capital: somma del portfolio_value di tutti i retail
-        - total_capital_in_copy: capitale retail effettivamente in copy (da copy_engine)
-        - copy_penetration_pct: % del capitale retail in copy
-        - n_professionals_in_monetization: trader professionisti in fase C
-        - n_retail_losing: retail con PnL totale negativo
-        - avg_retail_pnl: media del PnL totale tra tutti i retail
+        - total_retail_capital: sum of portfolio_value across all retail traders
+        - total_capital_in_copy: retail capital actually in copy (from copy_engine)
+        - copy_penetration_pct: % of retail capital in copy
+        - n_professionals_in_monetization: professional traders in phase C
+        - n_retail_losing: retail traders with negative total PnL
+        - avg_retail_pnl: average total PnL across all retail traders
 
         Returns:
-            dict con tutti i campi descritti sopra.
+            dict with all fields described above.
         """
-        # Capitale retail
+        # Retail capital
         retail_pnls = []
         total_retail_capital = 0.0
         for retail_id in state.retail_traders:
@@ -323,7 +323,7 @@ class StrategyRecommender:
             if total_retail_capital > 0 else 0.0
         )
 
-        # Professionisti in fase C
+        # Professionals in phase C
         n_in_monetization = sum(
             1 for t in state.professional_traders.values()
             if t.phase == TraderPhase.MONETIZATION
@@ -346,6 +346,6 @@ class StrategyRecommender:
         }
 
 
-# ── Istanza globale ────────────────────────────────────────────────────────
-# Importabile direttamente: from algorithm.recommender import strategy_recommender
+# ── Global instance ────────────────────────────────────────────────────────
+# Importable directly: from algorithm.recommender import strategy_recommender
 strategy_recommender = StrategyRecommender()

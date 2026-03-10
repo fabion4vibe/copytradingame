@@ -1,9 +1,9 @@
 """
 market/router.py
 ----------------
-Router FastAPI per gli endpoint /api/v1/market.
+FastAPI router for the /api/v1/market endpoints.
 
-Nessuna logica di dominio: chiama market_simulator e restituisce i risultati.
+No domain logic: calls market_simulator and returns the results.
 """
 
 from typing import Optional
@@ -19,13 +19,13 @@ router = APIRouter(prefix="/market", tags=["market"])
 
 @router.get("/assets")
 async def list_assets():
-    """Restituisce tutti gli asset con i prezzi correnti."""
+    """Returns all assets with their current prices."""
     return [asset.to_dict() for asset in state.assets.values()]
 
 
 @router.get("/assets/{asset_id}")
 async def get_asset(asset_id: str):
-    """Restituisce il dettaglio di un singolo asset."""
+    """Returns the detail of a single asset."""
     if asset_id not in state.assets:
         raise HTTPException(status_code=404, detail=f"Asset '{asset_id}' non trovato.")
     return state.assets[asset_id].to_dict()
@@ -36,7 +36,7 @@ async def get_asset_history(
     asset_id: str,
     last_n: Optional[int] = Query(default=None, ge=1),
 ):
-    """Restituisce la serie storica dei prezzi di un asset."""
+    """Returns the price history of an asset."""
     if asset_id not in state.assets:
         raise HTTPException(status_code=404, detail=f"Asset '{asset_id}' non trovato.")
     history = market_simulator.get_history(asset_id, last_n)
@@ -46,10 +46,10 @@ async def get_asset_history(
 @router.post("/tick")
 async def advance_tick(body: TickRequest):
     """
-    Esegue N tick completi tramite l'orchestratore.
+    Executes N complete ticks via the orchestrator.
 
-    Ogni tick include: aggiornamento prezzi, strategie professionisti,
-    propagazione copy trade e ricalcolo esposizione follower.
+    Each tick includes: price update, professional strategies,
+    copy trade propagation and follower exposure recalculation.
     """
     summaries = orchestrator.run_n_ticks(body.n_ticks)
     return {"tick": state.current_tick, "summaries": summaries}
@@ -57,7 +57,7 @@ async def advance_tick(body: TickRequest):
 
 @router.get("/status")
 async def get_market_status():
-    """Restituisce lo stato corrente della simulazione di mercato."""
+    """Returns the current state of the market simulation."""
     return {
         "tick": state.current_tick,
         "n_assets": len(state.assets),

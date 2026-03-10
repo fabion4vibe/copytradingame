@@ -1,9 +1,9 @@
 """
 asset.py
 --------
-Definisce la struttura dati `Asset` che rappresenta un singolo strumento
-finanziario simulato. Ogni asset mantiene il proprio storico dei prezzi e
-i parametri del modello GBM (drift e volatilità).
+Defines the `Asset` data structure representing a single simulated financial
+instrument. Each asset maintains its own price history and the GBM model
+parameters (drift and volatility).
 """
 
 import numpy as np
@@ -14,16 +14,16 @@ from typing import List
 @dataclass
 class Asset:
     """
-    Rappresenta un asset finanziario simulato.
+    Represents a simulated financial asset.
 
-    Attributi:
-        id            — identificatore univoco (es. "sim-a")
-        symbol        — simbolo leggibile (es. "SIM-A")
-        initial_price — prezzo al tick 0, usato come riferimento per il rendimento
-        current_price — prezzo corrente, aggiornato ad ogni tick dal MarketSimulator
-        volatility    — σ (sigma): deviazione standard del rendimento per tick
-        drift         — μ (mu): rendimento atteso per tick (può essere negativo)
-        price_history — serie storica completa; price_history[0] == initial_price
+    Attributes:
+        id            — unique identifier (e.g. "sim-a")
+        symbol        — human-readable symbol (e.g. "SIM-A")
+        initial_price — price at tick 0, used as the return reference
+        current_price — current price, updated every tick by MarketSimulator
+        volatility    — σ (sigma): standard deviation of return per tick
+        drift         — μ (mu): expected return per tick (can be negative)
+        price_history — complete price series; price_history[0] == initial_price
     """
 
     id: str
@@ -36,14 +36,14 @@ class Asset:
 
     def to_dict(self) -> dict:
         """
-        Serializza l'asset in un dizionario JSON-compatibile.
+        Serializes the asset to a JSON-compatible dictionary.
 
-        Non include price_history per default (può essere grande);
-        usa get_history() sul simulator per la serie storica completa.
+        Does not include price_history by default (can be large);
+        use get_history() on the simulator for the full price series.
 
         Returns:
-            dict con i campi principali dell'asset, compatibile con lo schema
-            Asset definito in openapi.yaml.
+            dict with the main asset fields, compatible with the Asset
+            schema defined in openapi.yaml.
         """
         return {
             "id": self.id,
@@ -57,13 +57,13 @@ class Asset:
 
     def current_return(self) -> float:
         """
-        Rendimento percentuale (in forma decimale) dall'inizio della simulazione.
+        Percentage return (in decimal form) since the start of the simulation.
 
         Formula: (current_price - initial_price) / initial_price
 
         Returns:
-            float: es. 0.05 significa +5%, -0.12 significa -12%.
-                   Restituisce 0.0 se initial_price è zero (caso degenere).
+            float: e.g. 0.05 means +5%, -0.12 means -12%.
+                   Returns 0.0 if initial_price is zero (degenerate case).
         """
         if self.initial_price == 0.0:
             return 0.0
@@ -72,16 +72,16 @@ class Asset:
     @classmethod
     def from_dict(cls, data: dict) -> "Asset":
         """
-        Ricostruisce un Asset da un dizionario snapshot.
+        Reconstructs an Asset from a snapshot dictionary.
 
-        Inizializza price_history con il solo current_price (il price_history
-        non viene incluso nel snapshot per contenere le dimensioni del payload).
+        Initialises price_history with only the current_price (price_history
+        is not included in the snapshot to keep the payload size small).
 
         Args:
-            data: dizionario prodotto da to_dict().
+            data: dictionary produced by to_dict().
 
         Returns:
-            Istanza Asset ripristinata.
+            Restored Asset instance.
         """
         asset = cls(
             id=data["id"],
@@ -96,19 +96,19 @@ class Asset:
 
     def volatility_realized(self) -> float:
         """
-        Volatilità realizzata: deviazione standard dei rendimenti logaritmici storici.
+        Realized volatility: standard deviation of historical log-returns.
 
-        Calcolata come std dei log-return: ln(P[t] / P[t-1])
+        Computed as the std of log-returns: ln(P[t] / P[t-1])
 
         Returns:
-            float: volatilità realizzata. Restituisce 0.0 se in price_history
-                   ci sono meno di 2 osservazioni (impossibile calcolare i ritorni).
+            float: realized volatility. Returns 0.0 if price_history has
+                   fewer than 2 observations (returns cannot be computed).
         """
         if len(self.price_history) < 2:
             return 0.0
 
         prices = np.array(self.price_history, dtype=float)
-        # Filtra prezzi <= 0 per evitare log di valori non positivi
+        # Filter prices <= 0 to avoid log of non-positive values
         prices = prices[prices > 0]
         if len(prices) < 2:
             return 0.0

@@ -1,10 +1,10 @@
 """
 traders/router.py
 -----------------
-Router FastAPI per gli endpoint /api/v1/retail e /api/v1/professional.
+FastAPI router for the /api/v1/retail and /api/v1/professional endpoints.
 
-Contiene due APIRouter distinti (retail_router e professional_router)
-montati in main.py con i prefix corretti. Nessuna logica di dominio.
+Contains two separate APIRouters (retail_router and professional_router)
+mounted in main.py with the correct prefixes. No domain logic.
 """
 
 from fastapi import APIRouter, HTTPException
@@ -22,13 +22,13 @@ from schemas import (
     UpdateStrategyRequest,
 )
 
-# ── Router Retail (/api/v1/retail) ─────────────────────────────────────────
+# ── Retail router (/api/v1/retail) ─────────────────────────────────────────
 
 retail_router = APIRouter(prefix="/retail", tags=["retail"])
 
 
 def _trade_to_dict(trade) -> dict:
-    """Serializza un Trade in dict JSON-compatibile."""
+    """Serializes a Trade to a JSON-compatible dict."""
     return {
         "id": trade.id,
         "trader_id": trade.trader_id,
@@ -44,7 +44,7 @@ def _trade_to_dict(trade) -> dict:
 
 
 def _copy_relation_to_dict(rel) -> dict:
-    """Serializza una CopyRelation in dict JSON-compatibile."""
+    """Serializes a CopyRelation to a JSON-compatible dict."""
     return {
         "retail_id": rel.retail_id,
         "professional_id": rel.professional_id,
@@ -56,7 +56,7 @@ def _copy_relation_to_dict(rel) -> dict:
 
 @retail_router.get("/traders")
 async def list_retail_traders():
-    """Restituisce il riepilogo di tutti i trader retail."""
+    """Returns a summary of all retail traders."""
     return [
         retail_engine.get_summary(trader_id)
         for trader_id in state.retail_traders
@@ -65,7 +65,7 @@ async def list_retail_traders():
 
 @retail_router.get("/traders/{trader_id}")
 async def get_retail_trader(trader_id: str):
-    """Restituisce il dettaglio completo di un trader retail."""
+    """Returns the full detail of a retail trader."""
     if trader_id not in state.retail_traders:
         raise HTTPException(status_code=404, detail=f"Retail trader '{trader_id}' non trovato.")
     trader = state.retail_traders[trader_id]
@@ -80,7 +80,7 @@ async def get_retail_trader(trader_id: str):
 
 @retail_router.post("/traders", status_code=201)
 async def create_retail_trader(body: CreateRetailRequest):
-    """Crea un nuovo trader retail e lo aggiunge alla simulazione."""
+    """Creates a new retail trader and adds them to the simulation."""
     trader = retail_engine.create_retail_trader(
         name=body.name,
         initial_balance=body.initial_balance,
@@ -91,7 +91,7 @@ async def create_retail_trader(body: CreateRetailRequest):
 
 @retail_router.post("/traders/{trader_id}/trade")
 async def execute_trade(trader_id: str, body: TradeRequest):
-    """Esegue un'operazione manuale (BUY o SELL) per un trader retail."""
+    """Executes a manual operation (BUY or SELL) for a retail trader."""
     if trader_id not in state.retail_traders:
         raise HTTPException(status_code=404, detail=f"Retail trader '{trader_id}' non trovato.")
     try:
@@ -110,7 +110,7 @@ async def execute_trade(trader_id: str, body: TradeRequest):
 
 @retail_router.post("/traders/{trader_id}/copy", status_code=201)
 async def start_copy(trader_id: str, body: CopyRequest):
-    """Avvia una relazione di copy trading verso un professionista."""
+    """Starts a copy trading relationship towards a professional."""
     try:
         relation = copy_engine.start_copy(
             retail_id=trader_id,
@@ -124,7 +124,7 @@ async def start_copy(trader_id: str, body: CopyRequest):
 
 @retail_router.delete("/traders/{trader_id}/copy/{professional_id}")
 async def stop_copy(trader_id: str, professional_id: str):
-    """Disattiva la relazione di copy trading tra retail e professionista."""
+    """Deactivates the copy trading relationship between retail and professional."""
     try:
         copy_engine.stop_copy(retail_id=trader_id, professional_id=professional_id)
         return {"success": True}
@@ -134,7 +134,7 @@ async def stop_copy(trader_id: str, professional_id: str):
 
 @retail_router.get("/traders/{trader_id}/history")
 async def get_trade_history(trader_id: str):
-    """Restituisce lo storico delle operazioni di un trader retail."""
+    """Returns the trade history of a retail trader."""
     if trader_id not in state.retail_traders:
         raise HTTPException(status_code=404, detail=f"Retail trader '{trader_id}' non trovato.")
     trader = state.retail_traders[trader_id]
@@ -143,7 +143,7 @@ async def get_trade_history(trader_id: str):
 
 @retail_router.get("/traders/{trader_id}/pnl")
 async def get_retail_pnl(trader_id: str):
-    """Restituisce il PnL e il valore corrente del portafoglio del trader."""
+    """Returns the trader's PnL and current portfolio value."""
     if trader_id not in state.retail_traders:
         raise HTTPException(status_code=404, detail=f"Retail trader '{trader_id}' non trovato.")
     return {
@@ -152,13 +152,13 @@ async def get_retail_pnl(trader_id: str):
     }
 
 
-# ── Router Professional (/api/v1/professional) ─────────────────────────────
+# ── Professional router (/api/v1/professional) ─────────────────────────────
 
 professional_router = APIRouter(prefix="/professional", tags=["professional"])
 
 
 def _strategy_to_dict(strategy) -> dict:
-    """Serializza uno StrategyProfile in dict JSON-compatibile."""
+    """Serializes a StrategyProfile to a JSON-compatible dict."""
     return {
         "expected_value": strategy.expected_value,
         "risk_level": strategy.risk_level,
@@ -172,7 +172,7 @@ def _strategy_to_dict(strategy) -> dict:
 
 @professional_router.get("/traders")
 async def list_professional_traders():
-    """Restituisce il riepilogo di tutti i trader professionisti."""
+    """Returns a summary of all professional traders."""
     return [
         professional_engine.get_summary(trader_id)
         for trader_id in state.professional_traders
@@ -181,7 +181,7 @@ async def list_professional_traders():
 
 @professional_router.get("/traders/{trader_id}")
 async def get_professional_trader(trader_id: str):
-    """Restituisce il dettaglio completo di un trader professionista."""
+    """Returns the full detail of a professional trader."""
     if trader_id not in state.professional_traders:
         raise HTTPException(status_code=404, detail=f"Professional trader '{trader_id}' non trovato.")
     trader = state.professional_traders[trader_id]
@@ -198,7 +198,7 @@ async def get_professional_trader(trader_id: str):
 
 @professional_router.patch("/traders/{trader_id}/phase")
 async def change_phase(trader_id: str, body: PhaseChangeRequest):
-    """Cambia la fase FSM di un trader professionista."""
+    """Changes the FSM phase of a professional trader."""
     if trader_id not in state.professional_traders:
         raise HTTPException(status_code=404, detail=f"Professional trader '{trader_id}' non trovato.")
     try:
@@ -211,12 +211,12 @@ async def change_phase(trader_id: str, body: PhaseChangeRequest):
 
 @professional_router.patch("/traders/{trader_id}/strategy")
 async def update_strategy(trader_id: str, body: UpdateStrategyRequest):
-    """Aggiorna il profilo strategico di un trader professionista (campi opzionali)."""
+    """Updates the strategy profile of a professional trader (all fields optional)."""
     if trader_id not in state.professional_traders:
         raise HTTPException(status_code=404, detail=f"Professional trader '{trader_id}' non trovato.")
     trader = state.professional_traders[trader_id]
     s = trader.strategy
-    # Aggiorna solo i campi forniti nel body
+    # Update only the fields provided in the body
     updates = body.model_dump(exclude_none=True)
     for field_name, value in updates.items():
         setattr(s, field_name, value)
@@ -225,7 +225,7 @@ async def update_strategy(trader_id: str, body: UpdateStrategyRequest):
 
 @professional_router.get("/traders/{trader_id}/history")
 async def get_professional_trade_history(trader_id: str):
-    """Restituisce lo storico delle operazioni di un trader professionista."""
+    """Returns the trade history of a professional trader."""
     if trader_id not in state.professional_traders:
         raise HTTPException(status_code=404, detail=f"Professional trader '{trader_id}' non trovato.")
     trader = state.professional_traders[trader_id]
@@ -234,7 +234,7 @@ async def get_professional_trade_history(trader_id: str):
 
 @professional_router.get("/traders/{trader_id}/phase-history")
 async def get_phase_history(trader_id: str):
-    """Restituisce il log dei cambi di fase di un trader professionista."""
+    """Returns the phase change log of a professional trader."""
     if trader_id not in state.professional_traders:
         raise HTTPException(status_code=404, detail=f"Professional trader '{trader_id}' non trovato.")
     return state.professional_traders[trader_id].phase_history
