@@ -44,7 +44,6 @@ export function PortfolioPanel({ retailId, tick }: PortfolioPanelProps) {
     const price = assetMap[assetId]?.current_price ?? 0;
     return sum + qty * price;
   }, 0);
-  const totalPnl = portfolioValue - (trader.balance + Object.values(trader.portfolio).reduce((s, q) => s + q, 0) * 0);
   // Usa i valori calcolati dall'API
   const pnl = trader.total_pnl;
 

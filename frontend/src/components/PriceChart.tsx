@@ -43,8 +43,8 @@ export function PriceChart({ symbol, history, color = '#60a5fa' }: PriceChartPro
           contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151', borderRadius: 6 }}
           labelStyle={{ color: '#9ca3af', fontSize: 11 }}
           itemStyle={{ color: color, fontSize: 12 }}
-          formatter={(value: number) => [value.toFixed(4), symbol]}
-          labelFormatter={(label: number) => `Tick ${label}`}
+          formatter={(value) => [(value as number).toFixed(4), symbol] as [string, string]}
+          labelFormatter={(label) => `Tick ${label}`}
         />
         <Line
           type="monotone"

@@ -58,13 +58,13 @@ export function PlatformPnLChart({ pnlData }: PlatformPnLChartProps) {
             contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151', borderRadius: 4 }}
             labelStyle={{ color: '#9ca3af', fontSize: 11 }}
             itemStyle={{ fontSize: 11 }}
-            formatter={(value: number, name: string) => {
+            formatter={(value, name) => {
               const labels: Record<string, string> = {
                 pnl_netto: 'PnL Netto',
                 pnl_lordo: 'Commissioni (perdite retail)',
                 bonus_pagati: 'Bonus pagati',
               };
-              return [`€${value.toFixed(2)}`, labels[name] ?? name];
+              return [`€${(value as number).toFixed(2)}`, labels[name as string] ?? name] as [string, string];
             }}
           />
           <Legend

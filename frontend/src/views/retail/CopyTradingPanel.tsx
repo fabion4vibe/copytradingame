@@ -180,7 +180,7 @@ export function CopyTradingPanel({ retailId, onCopyChanged }: CopyTradingPanelPr
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-white font-medium truncate">{p.name}</p>
                     <p className="text-xs text-gray-400">
-                      Follower: {p.followers} · Capitale esposto: €{p.follower_capital_exposed.toFixed(0)} · PnL: €{p.pnl_personal.toFixed(2)}
+                      Follower: {p.followers_count} · Capitale esposto: €{p.follower_capital_exposed.toFixed(0)} · PnL: €{p.pnl_personal.toFixed(2)}
                     </p>
                   </div>
                   {isCopied ? (
