@@ -204,6 +204,22 @@ Lo stato viene salvato automaticamente ogni 100 tick e ripristinato al riavvio d
 
 ---
 
+## Licenza
+
+[![License: CC BY 4.0](https://img.shields.io/badge/License-CC%20BY%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by/4.0/)
+
+Questo progetto è rilasciato sotto licenza **Creative Commons Attribution 4.0 International (CC BY 4.0)**.
+
+Sei libero di condividere e adattare il materiale per qualsiasi scopo, anche commerciale, a condizione di **citare l'autore originale**:
+
+> **Autore:** FC
+> **Repository:** https://github.com/fabion4vibe/copytradingame
+> **Licenza:** CC BY 4.0 — https://creativecommons.org/licenses/by/4.0/
+
+Vedi il file [LICENSE](./LICENSE) per il testo completo.
+
+---
+
 ## Struttura del progetto
 
 ```
