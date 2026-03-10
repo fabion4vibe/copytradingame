@@ -40,10 +40,6 @@ export function PortfolioPanel({ retailId, tick }: PortfolioPanelProps) {
   if (error || !trader) return <ErrorMessage message={error ?? 'Dati non disponibili.'} />;
 
   const assetMap = Object.fromEntries(assets.map((a) => [a.id, a]));
-  const portfolioValue = trader.balance + Object.entries(trader.portfolio).reduce((sum, [assetId, qty]) => {
-    const price = assetMap[assetId]?.current_price ?? 0;
-    return sum + qty * price;
-  }, 0);
   // Usa i valori calcolati dall'API
   const pnl = trader.total_pnl;
 
