@@ -52,6 +52,43 @@ una **categoria** e una breve descrizione del valore atteso.
 
 ---
 
+## Internazionalizzazione (i18n)
+
+Questa sezione è pianificata in due fasi operative:
+
+**Fase 1 — TASK_14** *(già formalizzato in `tasks/TASK_14_technical_english.md`)*
+Tutto il codice e la documentazione tecnica passa all'inglese.
+Il criterio è: *se lo legge uno sviluppatore → inglese; se lo legge l'utente finale → rimane in italiano per ora*.
+
+**Fase 2 — TASK_15** *(da formalizzare)*
+Internazionalizzazione dell'interfaccia utente con supporto per tre lingue:
+
+| Locale | Codice | Note |
+|---|---|---|
+| Italiano | `it` | Lingua di partenza — le stringhe attuali diventano il file base |
+| Inglese | `en` | Prima traduzione |
+| Sardo | `sc` | Terza lingua — richiederà revisione madrelingua |
+
+| # | Priorità | Voce | Note |
+|---|---|---|---|
+| B-16 | 🔴 | TASK_14: traduzione tecnica → English | Formalizzato, pronto per esecuzione |
+| B-17 | 🔴 | TASK_15: setup react-i18next + lingua `it` (estrazione stringhe UI) | Prerequisito per qualsiasi altra lingua |
+| B-18 | 🟡 | TASK_16: aggiunta lingua `en` (traduzione inglese UI) | Dopo TASK_15 |
+| B-19 | 🟡 | TASK_17: aggiunta lingua `sc` (traduzione sarda UI) | Richiede madrelingua o revisore |
+| B-20 | 🟢 | Language switcher nell'header, persistito in localStorage | UX per cambio lingua in-app |
+| B-21 | 🟢 | Traduzione dei contenuti didattici (mechanisms.ts, phases.ts, howItWorks.ts) | I file di contenuto hanno molte stringhe lunghe — gestirle separatamente dal resto della UI |
+| B-22 | 🟢 | Traduzione `openapi.yaml` — descrizioni endpoint in inglese | Bassa priorità, utile solo per sviluppatori |
+
+### Decisioni architetturali da prendere prima di TASK_15
+
+- **Libreria**: `react-i18next` (standard de facto) o alternativa?
+- **Formato file**: `.json` (semplice) o `.po`/`.pot` (standard gettext, tool professionali)?
+- **Namespace**: un file unico per lingua o suddiviso per componente/vista?
+- **Fallback**: se una stringa sarda manca → cade su italiano o inglese?
+- **Codice locale sardo**: `sc` (ISO 639-1 non ufficiale) o `srd` (ISO 639-3)?
+
+---
+
 ## Scartato / In attesa
 
 | # | Voce | Motivo |

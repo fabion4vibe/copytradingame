@@ -92,5 +92,7 @@ Aggiorna questa sezione man mano che i task vengono completati.
 | TASK_11 | `task/11-frontend-manager` | ✅ Completato | PlatformKpiPanel, PlatformPnLChart, CopyFlowPanel, TraderControlPanel, AlgorithmPanel, ManagerDashboard |
 | TASK_12 | `task/12-didactic-layer` | ✅ Completato | content/ (4 file), components/ (8 componenti), ConflictOfInterestBanner in App.tsx |
 | TASK_13 | `task/13-remote-persistence` | ✅ Completato | to_dict/from_dict su tutti i modelli, save_to_remote/load_from_remote su SimulationState, lifespan aggiornato |
+| TASK_14 | `task/14-technical-english` | ⬜ Non iniziato | Traduzione tecnica → English: docstring, commenti, task sheet, documentazione |
+| TASK_15 | `task/15-ui-i18n` | ⬜ Non iniziato | i18n UI: react-i18next, lingue it/en/sc — dipende da TASK_14 |
 
 Legend: ⬜ Non iniziato | 🔄 In corso | ✅ Completato | ❌ Bloccato
